@@ -28,6 +28,14 @@
             font-size: 16px;
         }
         button:hover { background-color: #45a049; }
+        button:disabled { background-color: #cccccc; cursor: not-allowed; }
+        #confirmSiteButton {
+            background-color: #2196F3;
+            margin-left: 10px;
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+        #confirmSiteButton:hover:not(:disabled) { background-color: #1976D2; }
         .response { margin-top: 20px; padding: 10px; background-color: #e2e2e2; border-radius: 4px; }
     </style>
 </head>
@@ -57,6 +65,7 @@
             </div>
             <div class="form-group">
                 <button type="button" id="queryDropdownsButton" disabled>매니저/사이트 목록 조회</button>
+                <button type="button" id="confirmSiteButton" disabled>고정/선택</button>
             </div>
             <div class="form-group">
                 <button type="button" id="readReportButton" disabled>보고서 조회</button>
@@ -94,6 +103,9 @@
         let originalSites = [];
         // 원본 보고서 시트 이름 목록 (검색 필터링용)
         let originalReportSheetNames = [];
+        
+        // L40 이후 범위의 사이트들 (고객 요청사항 입력 불가) - 동적으로 생성됨
+        let sitesWithoutCustomerRequests = [];
 
         function gapiLoaded() {
             gapi.load('client', initializeGapiClient);
@@ -135,6 +147,7 @@
                 document.querySelector('button[type="submit"]').disabled = false;
                 console.log('Dropdowns and Submit buttons enabled.'); // 버튼 활성화 로그 추가
                 updateReadReportButtonState(); // 초기 로드 시 보고서 조회 버튼 상태 설정
+                updateConfirmSiteButtonState(); // 초기 로드 시 "고정/선택" 버튼 상태 설정
             } else {
                 console.log('Dropdowns and Submit buttons NOT yet enabled (waiting for gapi/gis init).'); // 버튼 비활성화 상태 로그 추가
             }
@@ -199,34 +212,128 @@
                 }
 
                 originalManagers = Array.from(managers).sort();
-                originalSites = Array.from(sites).sort();
+                // originalSites = Array.from(sites).sort(); // SITE 분장 현황에서 사이트 가져오는 로직 주석 처리
                 console.log('Original Managers:', originalManagers); // 원본 매니저 목록 출력
-                console.log('Original Sites:', originalSites);     // 원본 사이트 목록 출력
+                // console.log('Original Sites:', originalSites);     // 원본 사이트 목록 출력 (임시 주석 처리)
 
                 // 매니저 드롭다운 채우기
                 updateManagerDropdown(originalManagers);
 
-                // 사이트 드롭다운 채우기 (매니저 필터링 없이 전체 사이트)
-                updateSiteDropdown(originalSites, document.getElementById('searchSite').value);
-
-                // 보고서 시트 이름 가져오기 및 채우기
-                console.log('Requesting spreadsheet metadata to get sheet names...');
+                // 스프레드시트 메타데이터 가져와서 YYYY-MM-DD 형식의 시트 이름 찾기
+                console.log('Requesting spreadsheet metadata...');
                 const spreadsheetMetadataResponse = await gapi.client.sheets.spreadsheets.get({
                     spreadsheetId: SPREADSHEET_ID,
-                    fields: 'sheets.properties(title,sheetId)' // 시트 제목과 ID를 함께 가져오도록 필드 제한
                 });
                 console.log('Google Sheets API Response (Spreadsheet Metadata):', spreadsheetMetadataResponse);
 
+                // YYYY-MM-DD 형식의 시트 이름 필터링
                 const datePattern = /^\d{4}-\d{2}-\d{2}$/;
-                // 시트 이름과 ID를 함께 저장하는 객체 배열로 변경
                 originalReportSheetNames = spreadsheetMetadataResponse.result.sheets
-                    .map(sheet => ({ title: sheet.properties.title, id: sheet.properties.sheetId }))
-                    .filter(sheet => datePattern.test(sheet.title))
-                    .sort((a, b) => b.title.localeCompare(a.title)); // 최신 날짜 시트가 먼저 오도록 정렬
+                    .filter(sheet => datePattern.test(sheet.properties.title))
+                    .map(sheet => ({
+                        title: sheet.properties.title,
+                        id: sheet.properties.sheetId  // sheetId 대신 id로 변경
+                    }))
+                    .sort((a, b) => b.title.localeCompare(a.title)); // 최신 날짜가 먼저 오도록 정렬
+
+                // 보고서 시트 이름 가져오기 및 채우기
                 console.log('Original Report Sheet Names with IDs:', originalReportSheetNames); // 원본 시트 이름 목록과 ID 출력
                 updateReportSheetNameDropdown(originalReportSheetNames);
 
-                document.getElementById('response').textContent = '매니저/사이트/시트 목록을 성공적으로 불러왔습니다.';
+                // --- 이제 가장 최신 YYYY-MM-DD 시트에서 SITE명 가져오기 ---
+                if (originalReportSheetNames.length > 0) {
+                    const latestReportSheetName = originalReportSheetNames[0].title; // 가장 최신 시트 (정렬되어 있음)
+                    console.log('Fetching site names from latest report sheet:', latestReportSheetName);
+
+                    // 사용자 제공 패턴에 따른 SITE명 셀 범위 (전체 범위로 확장)
+                    const siteNameRanges = [
+                        `'${latestReportSheetName}'!B:B`, // B열 전체에서 SITE명 찾기
+                        `'${latestReportSheetName}'!G:G`, // G열 전체에서 SITE명 찾기
+                        `'${latestReportSheetName}'!L:L`, // L열 전체에서 SITE명 찾기
+                    ];
+
+                    try {
+                        const siteResponse = await gapi.client.sheets.spreadsheets.values.batchGet({
+                            spreadsheetId: SPREADSHEET_ID,
+                            ranges: siteNameRanges,
+                        });
+                        console.log('Site Names Batch Get Response:', siteResponse);
+
+                        const fetchedSites = new Set();
+                        const lColumnSitesWithoutCustomerRequests = new Set(); // L열의 40행 이후 사이트들
+                        
+                        siteResponse.result.valueRanges.forEach((rangeData, rangeIndex) => {
+                            if (rangeData.values) {
+                                rangeData.values.forEach((row, rowIndex) => {
+                                    if (row.length > 0 && row[0] && row[0].trim() !== '') {
+                                        const cellValue = row[0].trim();
+                                        // 헤더나 설명 텍스트가 아닌 실제 사이트명만 필터링
+                                        if (cellValue !== 'SITE명' && 
+                                            !cellValue.includes('금주 한 일') && 
+                                            !cellValue.includes('차주 할 일') && 
+                                            !cellValue.includes('고객 요청사항') &&
+                                            !cellValue.includes('본인 성명') &&
+                                            !cellValue.includes('필수 입력') &&
+                                            !cellValue.includes('없음') &&
+                                            !cellValue.includes('▶') &&
+                                            !cellValue.includes('구분') &&
+                                            !cellValue.includes('작성 등록일') &&
+                                            !cellValue.includes('매주 목요일') &&
+                                            !cellValue.includes('휴일은 전일') &&
+                                            !cellValue.includes('각 항목') &&
+                                            !cellValue.includes('작성 내용이 없으면') &&
+                                            !cellValue.includes('SITE명 순서') &&
+                                            !cellValue.includes('프로젝트 순 표시') &&
+                                            !cellValue.includes('25년 현재') &&
+                                            !cellValue.includes('추진 中 프로젝트') &&
+                                            rowIndex >= 3) { // 4행부터 시작 (0-based이므로 3)
+                                            
+                                            fetchedSites.add(cellValue);
+                                            
+                                            // L열(rangeIndex === 2)이고 40행 이후(rowIndex >= 39, 0-based이므로 40행은 39)인 경우
+                                            if (rangeIndex === 2 && rowIndex >= 39) {
+                                                lColumnSitesWithoutCustomerRequests.add(cellValue);
+                                                console.log(`L열 40행 이후 사이트 발견: ${cellValue} (행: ${rowIndex + 1})`);
+                                            }
+                                        }
+                                    }
+                                });
+                            }
+                        });
+                        
+                        // L열 40행 이후 사이트들을 예외 목록에 추가
+                        sitesWithoutCustomerRequests = Array.from(lColumnSitesWithoutCustomerRequests);
+                        console.log('동적으로 생성된 예외 사이트 목록:', sitesWithoutCustomerRequests);
+                        originalSites = Array.from(fetchedSites).sort();
+                        console.log('Original Sites from latest report sheet:', originalSites); // 새로 가져온 사이트 목록 출력
+
+                    } catch (siteErr) {
+                        console.error('Error fetching site names from latest report sheet:', siteErr);
+                        // 오류 발생 시 사이트 목록을 비워둠
+                        originalSites = [];
+                    }
+                } else {
+                    console.log('No YYYY-MM-DD report sheets found, cannot fetch site names.');
+                    originalSites = [];
+                }
+
+                // 사이트 드롭다운 채우기
+                updateSiteDropdown(originalSites, document.getElementById('searchSite').value);
+                
+                // 초기 상태에서 고객 요청사항 필드 상태 설정
+                toggleCustomerRequestsField('');
+                
+                // 초기 상태에서 "고정/선택" 버튼 상태 설정
+                updateConfirmSiteButtonState();
+
+                // Google Sheets 링크 생성 (전체 스프레드시트)
+                const mainSheetUrl = 'https://docs.google.com/spreadsheets/d/1Xrz9RlDXu3v6pBbuQc-B306gtXnG5CfebRG6KP44Kxs/edit';
+                document.getElementById('response').innerHTML = `
+                    매니저/사이트/시트 목록을 성공적으로 불러왔습니다.<br>
+                    <a href="${mainSheetUrl}" target="_blank" style="color: #1976d2; text-decoration: underline; margin-top: 10px; display: inline-block;">
+                        📊 Google Sheets에서 확인하기
+                    </a>
+                `;
                 document.getElementById('response').style.display = 'block';
 
                 // 드롭다운 조회 버튼 상태 변경
@@ -286,6 +393,99 @@
         }
 
         /**
+         * "고정/선택" 버튼의 활성화/비활성화 상태를 업데이트합니다.
+         */
+        function updateConfirmSiteButtonState() {
+            const confirmButton = document.getElementById('confirmSiteButton');
+            const managerSelected = document.getElementById('manager').value !== '';
+            const siteSelected = document.getElementById('site_name').value !== '';
+            const reportSheetSelected = document.getElementById('reportSheetName').value !== '';
+            
+            if (managerSelected && siteSelected && reportSheetSelected) {
+                confirmButton.disabled = false;
+                confirmButton.textContent = '고정/선택';
+            } else {
+                confirmButton.disabled = true;
+                confirmButton.textContent = '고정/선택';
+            }
+        }
+
+        /**
+         * 선택된 사이트에 따라 고객 요청사항 필드를 활성화/비활성화합니다.
+         * @param {string} selectedSite 선택된 사이트명
+         */
+        function toggleCustomerRequestsField(selectedSite) {
+            const customerRequestsField = document.getElementById('customer_requests');
+            const customerRequestsLabel = document.querySelector('label[for="customer_requests"]');
+            
+            console.log('toggleCustomerRequestsField called with:', selectedSite);
+            console.log('Checking if site is in exception list...');
+            
+            if (sitesWithoutCustomerRequests.includes(selectedSite)) {
+                // 고객 요청사항 입력 불가 사이트인 경우
+                customerRequestsField.disabled = true;
+                customerRequestsField.value = ''; // 기존 값 초기화
+                customerRequestsField.placeholder = '해당 사이트는 고객 요청사항 입력이 불가합니다.';
+                customerRequestsField.style.backgroundColor = '#f5f5f5';
+                customerRequestsField.style.color = '#999';
+                customerRequestsLabel.style.color = '#999';
+                customerRequestsLabel.textContent = '고객 요청사항 (입력 불가)';
+            } else {
+                // 일반 사이트인 경우
+                customerRequestsField.disabled = false;
+                customerRequestsField.placeholder = '고객 요청사항을 입력하세요 (없으면 "없음" 입력)';
+                customerRequestsField.style.backgroundColor = '';
+                customerRequestsField.style.color = '';
+                customerRequestsLabel.style.color = '';
+                customerRequestsLabel.textContent = '고객 요청사항';
+            }
+        }
+
+        /**
+         * "고정/선택" 버튼 클릭 시 호출되는 함수
+         */
+        function confirmSiteSelection() {
+            const managerSelected = document.getElementById('manager').value;
+            const siteSelected = document.getElementById('site_name').value;
+            const reportSheetSelected = document.getElementById('reportSheetName').value;
+            const responseDiv = document.getElementById('response');
+            
+            // 모든 드롭다운이 선택되었는지 확인
+            if (!managerSelected || !siteSelected || !reportSheetSelected) {
+                responseDiv.textContent = '매니저, 담당 사이트, 보고서 시트 이름을 모두 선택해주세요.';
+                responseDiv.style.display = 'block';
+                responseDiv.style.backgroundColor = '#ffebee';
+                responseDiv.style.color = '#c62828';
+                return;
+            }
+            
+            // 디버깅을 위한 로그 추가
+            console.log('Selected site:', siteSelected);
+            console.log('Sites without customer requests:', sitesWithoutCustomerRequests);
+            console.log('Is site in exception list?', sitesWithoutCustomerRequests.includes(siteSelected));
+            
+            // 사이트 선택에 따라 고객 요청사항 필드 상태 설정
+            toggleCustomerRequestsField(siteSelected);
+            
+            // Google Sheets 링크 생성 (선택된 보고서 시트에 따라)
+            const selectedReportSheetName = document.getElementById('reportSheetName').value;
+            const selectedOption = document.getElementById('reportSheetName').selectedOptions[0];
+            const reportSheetId = selectedOption ? selectedOption.dataset.sheetId : '';
+            const sheetUrl = `https://docs.google.com/spreadsheets/d/1Xrz9RlDXu3v6pBbuQc-B306gtXnG5CfebRG6KP44Kxs/edit#gid=${reportSheetId}`;
+            
+            // 성공 메시지 표시
+            responseDiv.innerHTML = `
+                사이트 선택이 확정되었습니다: ${siteSelected}<br>
+                <a href="${sheetUrl}" target="_blank" style="color: #1976d2; text-decoration: underline; margin-top: 10px; display: inline-block;">
+                    📊 Google Sheets에서 확인하기
+                </a>
+            `;
+            responseDiv.style.display = 'block';
+            responseDiv.style.backgroundColor = '#e8f5e8';
+            responseDiv.style.color = '#2e7d32';
+        }
+
+        /**
          * 보고서 시트 이름 드롭다운을 업데이트합니다.
          * @param {Array<{title: string, id: number}>} sheetNamesList 표시할 시트 이름 및 ID 목록
          * @param {string} searchTerm 시트 이름 검색어 (현재는 사용하지 않음)
@@ -323,10 +523,26 @@
             updateReadReportButtonState(); // 사이트 변경 시 보고서 조회 버튼 상태 업데이트
         });
 
+        // 매니저 드롭다운 변경 시 보고서 조회 버튼 및 고정/선택 버튼 상태 업데이트
+        document.getElementById('manager').addEventListener('change', function() {
+            updateReadReportButtonState();
+            updateConfirmSiteButtonState();
+        });
+
+        // 사이트 드롭다운 변경 시 보고서 조회 버튼 상태만 업데이트
+        document.getElementById('site_name').addEventListener('change', function() {
+            updateReadReportButtonState();
+            updateConfirmSiteButtonState();
+        });
+
         // 보고서 시트 이름 드롭다운 변경 시 보고서 조회 버튼 상태 업데이트
         document.getElementById('reportSheetName').addEventListener('change', function() {
             updateReadReportButtonState();
+            updateConfirmSiteButtonState();
         });
+
+        // "고정/선택" 버튼 클릭 이벤트 리스너
+        document.getElementById('confirmSiteButton').addEventListener('click', confirmSiteSelection);
 
         // "보고서 조회" 버튼의 활성화/비활성화 상태를 업데이트하는 헬퍼 함수
         function updateReadReportButtonState() {
@@ -378,14 +594,23 @@
             responseDiv.style.display = 'block';
             responseDiv.textContent = '보고서 제출 중...';
 
-            // TODO: YOUR_REPORT_SHEET_ID와 REPORT_SHEET_NAME을 실제 보고서 시트 정보로 변경해야 합니다.
-            const YOUR_REPORT_SHEET_ID = '1Xrz9RlDXu3v6pBbuQc-B306gtXnG5CfebRG6KP44Kxs'; // 보고서 데이터가 기록될 스프레드시트 ID
-            // const REPORT_SHEET_NAME = 'Sheet1'; // 보고서 데이터가 기록될 시트 이름 (예: '2025-09-25')
+            // 보고서 시트 정보 가져오기
+            const SPREADSHEET_ID = '1Xrz9RlDXu3v6pBbuQc-B306gtXnG5CfebRG6KP44Kxs'; // 스프레드시트 ID
             const REPORT_SHEET_NAME = document.getElementById('reportSheetName').value;
             const selectedOption = document.getElementById('reportSheetName').selectedOptions[0];
             const REPORT_SHEET_ID = selectedOption ? parseInt(selectedOption.dataset.sheetId) : null;
-
+            
+            // 디버깅을 위한 로그 추가
+            console.log('Submit Form Data - Debug Info:');
+            console.log('SPREADSHEET_ID:', SPREADSHEET_ID);
+            console.log('REPORT_SHEET_NAME:', REPORT_SHEET_NAME);
+            console.log('selectedOption:', selectedOption);
+            console.log('REPORT_SHEET_ID:', REPORT_SHEET_ID);
+            console.log('selectedOption.dataset.sheetId:', selectedOption ? selectedOption.dataset.sheetId : 'N/A');
+            
+            // 시트 ID가 없으면 오류 처리
             if (!REPORT_SHEET_ID) {
+                console.error('REPORT_SHEET_ID is null or undefined');
                 responseDiv.textContent = '보고서 시트 ID를 찾을 수 없습니다. 다시 시도해주세요.';
                 return;
             }
@@ -397,7 +622,7 @@
             try {
                 // 시트의 전체 데이터 가져오기
                 const response = await gapi.client.sheets.spreadsheets.values.get({
-                    spreadsheetId: YOUR_REPORT_SHEET_ID,
+                    spreadsheetId: SPREADSHEET_ID,
                     range: `${REPORT_SHEET_NAME}!A:Z`, // 충분히 넓은 범위로 데이터를 가져옵니다。
                 });
 
@@ -410,113 +635,68 @@
                     throw new Error(`담당 사이트 '${formData.site_name}'를 시트에서 찾을 수 없습니다.`);
                 }
 
-                const requests = []; // batchUpdate를 위한 요청 배열
+                const updates = []; // values.batchUpdate를 위한 업데이트 배열
 
                 // 모든 셀에 적용할 공통 서식
-                const cellFormat = {
-                    textFormat: {
-                        fontSize: 11,
-                        bold: true,
-                        fontFamily: 'Arial' // 폰트 변질 방지를 위해 Arial 폰트 지정
-                    }
-                };
+                // const cellFormat = {
+                //     textFormat: {
+                //         fontSize: 11,
+                //         bold: true,
+                //         fontFamily: 'Arial' // 폰트 변질 방지를 위해 Arial 폰트 지정
+                //     }
+                // };
 
                 // 담당자 셀 (site_name 셀의 행은 동일, 열은 바로 오른쪽)
                 const managerColOffset = COLUMN_ORDER.indexOf('담당자');
                 const managerRange = `'${REPORT_SHEET_NAME}'!${columnToLetter(col + managerColOffset)}${row + 1}`;
-                requests.push({
-                    updateCells: {
-                        range: {
-                            sheetId: REPORT_SHEET_ID,
-                            startRowIndex: row,
-                            endRowIndex: row + 1,
-                            startColumnIndex: col + managerColOffset,
-                            endColumnIndex: col + managerColOffset + 1
-                        },
-                        rows: [{
-                            values: [{
-                                userEnteredValue: { stringValue: formData.manager },
-                                userEnteredFormat: cellFormat
-                            }]
-                        }],
-                        fields: 'userEnteredValue,userEnteredFormat'
-                    }
+                updates.push({
+                    range: managerRange,
+                    values: [[formData.manager]]
                 });
 
                 // 금주 한 일 셀 (site_name 셀의 행은 동일, 열은 '금주 한 일'이 있는 열)
                 let thisWeekTasksRelativeOffset = COLUMN_ORDER.indexOf('금주 한 일');
                 thisWeekTasksRelativeOffset += 1; // N열에서 O열로 이동하기 위해 1 추가
                 const thisWeekTasksRange = `'${REPORT_SHEET_NAME}'!${columnToLetter(col + thisWeekTasksRelativeOffset)}${row + 1}`;
-                requests.push({
-                    updateCells: {
-                        range: {
-                            sheetId: REPORT_SHEET_ID,
-                            startRowIndex: row,
-                            endRowIndex: row + 1,
-                            startColumnIndex: col + thisWeekTasksRelativeOffset,
-                            endColumnIndex: col + thisWeekTasksRelativeOffset + 1
-                        },
-                        rows: [{
-                            values: [{
-                                userEnteredValue: { stringValue: `▶ ${formData.this_week_tasks}` },
-                                userEnteredFormat: cellFormat
-                            }]
-                        }],
-                        fields: 'userEnteredValue,userEnteredFormat'
-                    }
+                updates.push({
+                    range: thisWeekTasksRange,
+                    values: [[`▶ ${formData.this_week_tasks}`]]
                 });
 
                 // 차주 할 일 셀 (site_name 셀의 행은 아래로 1칸, 열은 '금주 한 일'과 동일)
                 const nextWeekTasksRange = `'${REPORT_SHEET_NAME}'!${columnToLetter(col + thisWeekTasksRelativeOffset)}${row + 2}`;
-                requests.push({
-                    updateCells: {
-                        range: {
-                            sheetId: REPORT_SHEET_ID,
-                            startRowIndex: row + 1,
-                            endRowIndex: row + 2,
-                            startColumnIndex: col + thisWeekTasksRelativeOffset,
-                            endColumnIndex: col + thisWeekTasksRelativeOffset + 1
-                        },
-                        rows: [{
-                            values: [{
-                                userEnteredValue: { stringValue: `▶ ${formData.next_week_tasks}` },
-                                userEnteredFormat: cellFormat
-                            }]
-                        }],
-                        fields: 'userEnteredValue,userEnteredFormat'
-                    }
+                updates.push({
+                    range: nextWeekTasksRange,
+                    values: [[`▶ ${formData.next_week_tasks}`]]
                 });
 
                 // 고객 요청사항 셀 (site_name 셀의 행은 아래로 2칸, 열은 '금주 한 일'과 동일)
-                if (formData.customer_requests) {
+                // 예외 사이트가 아닌 경우에만 고객 요청사항 처리
+                if (formData.customer_requests && !sitesWithoutCustomerRequests.includes(formData.site_name)) {
                     const customerRequestsRange = `'${REPORT_SHEET_NAME}'!${columnToLetter(col + thisWeekTasksRelativeOffset)}${row + 3}`;
-                    requests.push({
-                        updateCells: {
-                            range: {
-                                sheetId: REPORT_SHEET_ID,
-                                startRowIndex: row + 2,
-                                endRowIndex: row + 3,
-                                startColumnIndex: col + thisWeekTasksRelativeOffset,
-                                endColumnIndex: col + thisWeekTasksRelativeOffset + 1
-                            },
-                            rows: [{
-                                values: [{
-                                    userEnteredValue: { stringValue: `▶ ${formData.customer_requests}` },
-                                    userEnteredFormat: cellFormat
-                                }]
-                            }],
-                            fields: 'userEnteredValue,userEnteredFormat'
-                        }
+                    updates.push({
+                        range: customerRequestsRange,
+                        values: [[`▶ ${formData.customer_requests}`]]
                     });
                 }
 
-                // batchUpdate 요청 (셀 값 및 서식 업데이트)
-                await gapi.client.sheets.spreadsheets.batchUpdate({
-                    spreadsheetId: YOUR_REPORT_SHEET_ID,
-                    resource: { requests: requests }
+                // batchUpdate 요청 (셀 값만 업데이트, 서식 유지)
+                await gapi.client.sheets.spreadsheets.values.batchUpdate({
+                    spreadsheetId: SPREADSHEET_ID,
+                    resource: {
+                        data: updates,
+                        valueInputOption: 'USER_ENTERED'
+                    }
                 });
 
-                responseDiv.textContent = '보고서가 성공적으로 제출되었습니다!';
+                // Google Sheets 링크 생성
+                const sheetUrl = `https://docs.google.com/spreadsheets/d/1Xrz9RlDXu3v6pBbuQc-B306gtXnG5CfebRG6KP44Kxs/edit#gid=${REPORT_SHEET_ID}`;
+                responseDiv.innerHTML = `
+                    보고서가 성공적으로 제출되었습니다!<br>
+                    <a href="${sheetUrl}" target="_blank" style="color: #1976d2; text-decoration: underline; margin-top: 10px; display: inline-block;">
+                        📊 Google Sheets에서 확인하기
+                    </a>
+                `;
 
                 // 드롭다운 값 확인 (초기화되기 전)
                 console.log('Manager dropdown value before clearing text fields:', document.getElementById('manager').value);
@@ -581,11 +761,16 @@
                 let thisWeekTasksRelativeOffset = COLUMN_ORDER.indexOf('금주 한 일');
                 thisWeekTasksRelativeOffset += 1; // O열로 이동하기 위해 1 추가
 
+                // 예외 사이트에 따라 읽어올 범위 결정
                 const rangesToRead = [
-                    `'${selectedReportSheetName}'!${columnToLetter(col + thisWeekTasksRelativeOffset)}${row + 1}`,
-                    `'${selectedReportSheetName}'!${columnToLetter(col + thisWeekTasksRelativeOffset)}${row + 2}`,
-                    `'${selectedReportSheetName}'!${columnToLetter(col + thisWeekTasksRelativeOffset)}${row + 3}`
+                    `'${selectedReportSheetName}'!${columnToLetter(col + thisWeekTasksRelativeOffset)}${row + 1}`, // 금주 한 일
+                    `'${selectedReportSheetName}'!${columnToLetter(col + thisWeekTasksRelativeOffset)}${row + 2}`  // 차주 할 일
                 ];
+                
+                // 예외 사이트가 아닌 경우에만 고객 요청사항 범위 추가
+                if (!sitesWithoutCustomerRequests.includes(selectedSiteName)) {
+                    rangesToRead.push(`'${selectedReportSheetName}'!${columnToLetter(col + thisWeekTasksRelativeOffset)}${row + 3}`); // 고객 요청사항
+                }
 
                 console.log('Reading data from ranges:', rangesToRead);
 
@@ -600,13 +785,36 @@
                 // 텍스트 필드에 데이터 출력
                 document.getElementById('this_week_tasks').value = (values[0] && values[0].values && values[0].values[0]) ? values[0].values[0][0].replace(/^▶\s*/, '') : '';
                 document.getElementById('next_week_tasks').value = (values[1] && values[1].values && values[1].values[0]) ? values[1].values[0][0].replace(/^▶\s*/, '') : '';
-                document.getElementById('customer_requests').value = (values[2] && values[2].values && values[2].values[0]) ? values[2].values[0][0].replace(/^▶\s*/, '') : '';
+                
+                // 예외 사이트가 아닌 경우에만 고객 요청사항 읽기
+                if (!sitesWithoutCustomerRequests.includes(selectedSiteName)) {
+                    // 예외 사이트가 아닌 경우 values[2]가 고객 요청사항
+                    document.getElementById('customer_requests').value = (values[2] && values[2].values && values[2].values[0]) ? values[2].values[0][0].replace(/^▶\s*/, '') : '';
+                } else {
+                    document.getElementById('customer_requests').value = ''; // 예외 사이트는 빈 값으로 설정
+                }
 
-                responseDiv.textContent = '보고서 데이터를 성공적으로 조회했습니다!';
+                // Google Sheets 링크 생성 (선택된 보고서 시트에 따라)
+                const selectedOption = document.getElementById('reportSheetName').selectedOptions[0];
+                const reportSheetId = selectedOption ? selectedOption.dataset.sheetId : '';
+                const sheetUrl = `https://docs.google.com/spreadsheets/d/1Xrz9RlDXu3v6pBbuQc-B306gtXnG5CfebRG6KP44Kxs/edit#gid=${reportSheetId}`;
+                responseDiv.innerHTML = `
+                    보고서 데이터를 성공적으로 조회했습니다!<br>
+                    <a href="${sheetUrl}" target="_blank" style="color: #1976d2; text-decoration: underline; margin-top: 10px; display: inline-block;">
+                        📊 Google Sheets에서 확인하기
+                    </a>
+                `;
                 readReportButton.textContent = '조회 완료';
                 readReportButton.style.backgroundColor = '#6c757d';
                 // 조회 완료 후에도 다시 조회할 수 있도록 활성화 상태 유지
                 readReportButton.disabled = false; 
+
+                // 3초 뒤 버튼 상태 초기화
+                setTimeout(() => {
+                    readReportButton.textContent = '보고서 조회';
+                    readReportButton.style.backgroundColor = '#4CAF50'; // 원래 색상
+                    readReportButton.disabled = false;
+                }, 3000); // 3초 (3000ms)
 
             } catch (err) {
                 console.error('Error reading report data:', err);

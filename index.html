@@ -9,6 +9,32 @@
         .container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); max-width: 600px; margin: auto; }
         h1 { text-align: center; color: #333; }
         .form-group { margin-bottom: 15px; }
+        
+        /* 그룹 박스 스타일 */
+        .form-section {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .form-section h3 {
+            margin: 0 0 15px 0;
+            color: #495057;
+            font-size: 16px;
+            font-weight: 600;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 8px;
+        }
+        
+        .form-section .form-group {
+            margin-bottom: 12px;
+        }
+        
+        .form-section .form-group:last-child {
+            margin-bottom: 0;
+        }
         label { display: block; margin-bottom: 5px; font-weight: bold; }
         input[type="text"], textarea, select {
             width: 100%;
@@ -47,6 +73,101 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+        }
+        
+        /* 고객 요청사항 전용 스타일 */
+        .list-input-item.customer-request-item {
+            display: block;
+            position: relative;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            /* 파일 문서처럼 왼쪽 위 모서리 튀어나온 효과 */
+            border-top-left-radius: 0;
+        }
+        
+        .list-input-item.customer-request-item::before {
+            content: '';
+            position: absolute;
+            top: -1px;
+            left: -1px;
+            width: 20px;
+            height: 20px;
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            border-bottom-right-radius: 8px;
+            border-top-left-radius: 4px;
+        }
+        
+        .list-input-item.customer-request-item .date-label {
+            display: inline-block;
+            margin-bottom: 4px;
+            font-size: 12px;
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .list-input-item.customer-request-item .date-input {
+            width: 120px;
+            margin-bottom: 8px;
+            padding: 6px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 12px;
+            background-color: #f8f9fa;
+            display: block;
+        }
+        
+        .list-input-item.customer-request-item .date-input:focus {
+            outline: none;
+            border-color: #4CAF50;
+            background-color: white;
+        }
+        
+        .list-input-item.customer-request-item .list-input {
+            width: 100%;
+            margin-right: 0;
+            margin-bottom: 8px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            background-color: #fafafa;
+            white-space: normal;
+            overflow: visible;
+            text-overflow: unset;
+            resize: vertical;
+            min-height: 40px;
+        }
+        
+        .list-input-item.customer-request-item .list-input:focus {
+            outline: none;
+            border-color: #4CAF50;
+            background-color: white;
+        }
+        
+        .list-input-item.customer-request-item .remove-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .list-input-item.customer-request-item .remove-btn:hover {
+            background-color: #c82333;
         }
         
         .list-input-item .remove-btn {
@@ -391,67 +512,79 @@
             </div>
         </div>
         <form id="reportForm">
-            <div class="form-group">
-                <label for="manager">매니저 이름:</label>
-                <input type="text" id="searchManager" placeholder="매니저 이름 검색...">
-                <select id="manager" name="manager" required>
-                    <option value="">선택하세요</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="site_name">담당 사이트:</label>
-                <input type="text" id="searchSite" placeholder="담당 사이트 검색...">
-                <select id="site_name" name="site_name" required>
-                    <option value="">선택하세요</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="reportSheetName">보고서 시트 이름:</label>
-                <select id="reportSheetName" name="reportSheetName" required>
-                    <option value="">선택하세요</option>
-                </select>
-            </div>
-            <div class="form-group query-button-container">
-                <button type="button" id="queryDropdownsButton" disabled>매니저/사이트 목록 조회</button>
-            </div>
-            <div class="form-group button-group">
-                <button type="button" id="confirmSiteButton" disabled>고정/선택</button>
-                <button type="button" id="readReportButton" disabled>보고서 조회</button>
-            </div>
-            <div class="form-group">
-                <label for="this_week_tasks">금주 한 일:</label>
-                <div class="list-input-container" id="this_week_tasks_container">
-                    <div class="list-input-item">
-                        <input type="text" placeholder="금주 한 일을 입력하세요..." class="list-input" 
-                               onkeydown="preventEnterSubmit(event)" onkeypress="preventEnterSubmit(event)">
-                        <button type="button" class="remove-btn" onclick="removeListItem(this)">×</button>
-                    </div>
+            <!-- 선택 섹션 -->
+            <div class="form-section">
+                <h3>📋 기본 정보 선택</h3>
+                <div class="form-group">
+                    <label for="manager">매니저 이름:</label>
+                    <input type="text" id="searchManager" placeholder="매니저 이름 검색...">
+                    <select id="manager" name="manager" required>
+                        <option value="">선택하세요</option>
+                    </select>
                 </div>
-                <button type="button" class="add-item-btn" onclick="addListItem('this_week_tasks_container')">+ 항목 추가</button>
-            </div>
-            <div class="form-group">
-                <label for="next_week_tasks">향후 할 일:</label>
-                <div class="list-input-container" id="next_week_tasks_container">
-                    <div class="list-input-item">
-                        <input type="text" placeholder="향후 할 일을 입력하세요..." class="list-input"
-                               onkeydown="preventEnterSubmit(event)" onkeypress="preventEnterSubmit(event)">
-                        <button type="button" class="remove-btn" onclick="removeListItem(this)">×</button>
-                    </div>
+                <div class="form-group">
+                    <label for="site_name">담당 사이트:</label>
+                    <input type="text" id="searchSite" placeholder="담당 사이트 검색...">
+                    <select id="site_name" name="site_name" required>
+                        <option value="">선택하세요</option>
+                    </select>
                 </div>
-                <button type="button" class="add-item-btn" onclick="addListItem('next_week_tasks_container')">+ 항목 추가</button>
-            </div>
-            <div class="form-group">
-                <label for="customer_requests">고객 요청사항:</label>
-                <div class="list-input-container" id="customer_requests_container">
-                    <div class="list-input-item">
-                        <input type="text" placeholder="고객 요청사항을 입력하세요..." class="list-input"
-                               onkeydown="preventEnterSubmit(event)" onkeypress="preventEnterSubmit(event)">
-                        <button type="button" class="remove-btn" onclick="removeListItem(this)">×</button>
-                    </div>
+                <div class="form-group">
+                    <label for="reportSheetName">보고서 시트 이름:</label>
+                    <select id="reportSheetName" name="reportSheetName" required>
+                        <option value="">선택하세요</option>
+                    </select>
                 </div>
-                <button type="button" class="add-item-btn" onclick="addListItem('customer_requests_container')">+ 항목 추가</button>
+                <div class="form-group query-button-container">
+                    <button type="button" id="queryDropdownsButton" disabled>매니저/사이트 목록 조회</button>
+                </div>
+                <div class="form-group button-group">
+                    <button type="button" id="confirmSiteButton" disabled>고정/선택</button>
+                    <button type="button" id="readReportButton" disabled>보고서 조회</button>
+                </div>
             </div>
-            <button type="submit" disabled>보고서 제출</button>
+                        <!-- 입력 섹션 -->
+            <div class="form-section">
+                <h3>📝 보고서 작성</h3>
+                <div class="form-group">
+                    <label for="this_week_tasks">금주 한 일:</label>
+                    <div class="list-input-container" id="this_week_tasks_container">
+                        <div class="list-input-item">
+                            <input type="text" placeholder="금주 한 일을 입력하세요..." class="list-input"
+                                   onkeydown="preventEnterSubmit(event)" onkeypress="preventEnterSubmit(event)">
+                            <button type="button" class="remove-btn" onclick="removeListItem(this)">×</button>
+                        </div>
+                    </div>
+                    <button type="button" class="add-item-btn" onclick="addListItem('this_week_tasks_container')">+ 항목 추가</button>
+                </div>
+                <div class="form-group">
+                    <label for="next_week_tasks">향후 할 일:</label>
+                    <div class="list-input-container" id="next_week_tasks_container">
+                        <div class="list-input-item">
+                            <input type="text" placeholder="향후 할 일을 입력하세요..." class="list-input"
+                                   onkeydown="preventEnterSubmit(event)" onkeypress="preventEnterSubmit(event)">
+                            <button type="button" class="remove-btn" onclick="removeListItem(this)">×</button>
+                        </div>
+                    </div>
+                    <button type="button" class="add-item-btn" onclick="addListItem('next_week_tasks_container')">+ 항목 추가</button>
+                </div>
+                <div class="form-group">
+                    <label for="customer_requests">고객 요청사항:</label>
+                    <div class="list-input-container" id="customer_requests_container">
+                        <div class="list-input-item customer-request-item">
+                            <div class="date-label">(발생일)</div>
+                            <input type="date" class="date-input" title="발생일 선택">
+                            <input type="text" placeholder="고객 요청사항을 입력하세요..." class="list-input"
+                                   onkeydown="preventEnterSubmit(event)" onkeypress="preventEnterSubmit(event)">
+                            <button type="button" class="remove-btn" onclick="removeListItem(this)">×</button>
+                        </div>
+                    </div>
+                    <button type="button" class="add-item-btn" onclick="addListItem('customer_requests_container')">+ 항목 추가</button>
+                </div>
+                <div class="form-group">
+                    <button type="submit" disabled>보고서 제출</button>
+                </div>
+            </div>
         </form>
         <div id="response" class="response" style="display: none;"></div>
     </div>
@@ -1363,11 +1496,24 @@
             const container = document.getElementById(containerId);
             const newItem = document.createElement('div');
             newItem.className = 'list-input-item';
-            newItem.innerHTML = `
-                <input type="text" placeholder="항목을 입력하세요..." class="list-input"
-                       onkeydown="preventEnterSubmit(event)" onkeypress="preventEnterSubmit(event)">
-                <button type="button" class="remove-btn" onclick="removeListItem(this)">×</button>
-            `;
+            
+            // 고객 요청사항인 경우 날짜 입력 칸 추가
+            if (containerId === 'customer_requests_container') {
+                newItem.className = 'list-input-item customer-request-item';
+                newItem.innerHTML = `
+                    <div class="date-label">(발생일)</div>
+                    <input type="date" class="date-input" title="발생일 선택">
+                    <input type="text" placeholder="고객 요청사항을 입력하세요..." class="list-input"
+                           onkeydown="preventEnterSubmit(event)" onkeypress="preventEnterSubmit(event)">
+                    <button type="button" class="remove-btn" onclick="removeListItem(this)">×</button>
+                `;
+            } else {
+                newItem.innerHTML = `
+                    <input type="text" placeholder="항목을 입력하세요..." class="list-input"
+                           onkeydown="preventEnterSubmit(event)" onkeypress="preventEnterSubmit(event)">
+                    <button type="button" class="remove-btn" onclick="removeListItem(this)">×</button>
+                `;
+            }
             container.appendChild(newItem);
         }
 
@@ -1382,38 +1528,61 @@
                 currentItem.remove();
             } else {
                 // 첫 번째 항목이면 값만 비우기
-                const input = currentItem.querySelector('.list-input');
-                input.value = '';
-                input.focus(); // 포커스 이동
+                const textInput = currentItem.querySelector('.list-input');
+                const dateInput = currentItem.querySelector('.date-input');
+                
+                textInput.value = '';
+                if (dateInput) {
+                    dateInput.value = ''; // 날짜도 초기화
+                }
+                textInput.focus(); // 포커스 이동
             }
         }
 
         // 리스트 데이터를 텍스트로 변환하는 함수 (Sheet용 - 첫 줄 제외하고 ▶ 추가)
         function getListData(containerId) {
             const container = document.getElementById(containerId);
-            const inputs = container.querySelectorAll('.list-input');
-            const values = Array.from(inputs)
-                .map(input => input.value.trim())
-                .filter(value => value !== '') // 공백 항목 제거
-                .map((value, index) => {
+            const items = container.querySelectorAll('.list-input-item');
+            const values = Array.from(items)
+                .map(item => {
+                    const textInput = item.querySelector('.list-input');
+                    const dateInput = item.querySelector('.date-input');
+                    
+                    if (!textInput || textInput.value.trim() === '') {
+                        return null; // 텍스트가 비어있으면 제외
+                    }
+                    
+                    const text = textInput.value.trim();
+                    const date = dateInput ? dateInput.value : '';
+                    
                     // 기존 텍스트에서 ▶ 제거하고 깨끗한 텍스트만 추출
-                    const cleanValue = value.replace(/^▶\s*/, '').trim();
+                    const cleanValue = text.replace(/^▶\s*/, '').trim();
                     
                     // 공백이 아닌 경우에만 처리
                     if (cleanValue === '') {
                         return null;
                     }
                     
+                    // 고객 요청사항인 경우 날짜 추가
+                    if (containerId === 'customer_requests_container' && date) {
+                        // 날짜 형식을 YY.MM.DD로 변환
+                        const dateObj = new Date(date);
+                        const formattedDate = `${dateObj.getFullYear().toString().slice(-2)}.${(dateObj.getMonth() + 1).toString().padStart(2, '0')}.${dateObj.getDate().toString().padStart(2, '0')}`;
+                        return `${cleanValue} (발생일 : ${formattedDate})`;
+                    }
+                    
+                    return cleanValue;
+                })
+                .filter(value => value !== null) // null 값 제거
+                .map((value, index) => {
                     // 첫 줄(index 0)은 ▶ 없이, 나머지는 ▶ 추가
                     if (index === 0) {
-                        console.log(`First line: "${value}" -> clean: "${cleanValue}" -> final: "${cleanValue}"`);
-                        return cleanValue;
+                        return value;
                     } else {
-                        console.log(`Other line: "${value}" -> clean: "${cleanValue}" -> final: "▶ ${cleanValue}"`);
-                        return `▶ ${cleanValue}`;
+                        return `▶ ${value}`;
                     }
-                })
-                .filter(value => value !== null); // null 값 제거
+                });
+            
             const result = values.join('\n');
             console.log(`getListData result for ${containerId}:`, result);
             return result;
@@ -1440,14 +1609,44 @@
             // 새 항목들 추가 (▶ 완전 제거)
             lines.forEach((line, index) => {
                 // 모든 ▶ 기호와 공백 제거
-                const cleanLine = line.replace(/^▶\s*/g, '').trim();
+                let cleanLine = line.replace(/^▶\s*/g, '').trim();
+                let dateValue = '';
+                
+                // 고객 요청사항인 경우 날짜 파싱
+                if (containerId === 'customer_requests_container') {
+                    const dateMatch = cleanLine.match(/\(발생일\s*:\s*(\d{2}\.\d{2}\.\d{2})\)$/);
+                    if (dateMatch) {
+                        // 날짜 부분 제거
+                        cleanLine = cleanLine.replace(/\s*\(발생일\s*:\s*\d{2}\.\d{2}\.\d{2}\)$/, '').trim();
+                        
+                        // YY.MM.DD 형식을 YYYY-MM-DD로 변환
+                        const dateStr = dateMatch[1];
+                        const [year, month, day] = dateStr.split('.');
+                        const fullYear = '20' + year; // 20XX년으로 변환
+                        dateValue = `${fullYear}-${month}-${day}`;
+                    }
+                }
+                
                 const newItem = document.createElement('div');
                 newItem.className = 'list-input-item';
-                newItem.innerHTML = `
-                    <input type="text" value="${cleanLine}" class="list-input"
-                           onkeydown="preventEnterSubmit(event)" onkeypress="preventEnterSubmit(event)">
-                    <button type="button" class="remove-btn" onclick="removeListItem(this)">×</button>
-                `;
+                
+                // 고객 요청사항인 경우 날짜 입력 칸 추가
+                if (containerId === 'customer_requests_container') {
+                    newItem.className = 'list-input-item customer-request-item';
+                    newItem.innerHTML = `
+                        <div class="date-label">(발생일)</div>
+                        <input type="date" class="date-input" value="${dateValue}" title="발생일 선택">
+                        <input type="text" value="${cleanLine}" class="list-input"
+                               onkeydown="preventEnterSubmit(event)" onkeypress="preventEnterSubmit(event)">
+                        <button type="button" class="remove-btn" onclick="removeListItem(this)">×</button>
+                    `;
+                } else {
+                    newItem.innerHTML = `
+                        <input type="text" value="${cleanLine}" class="list-input"
+                               onkeydown="preventEnterSubmit(event)" onkeypress="preventEnterSubmit(event)">
+                        <button type="button" class="remove-btn" onclick="removeListItem(this)">×</button>
+                    `;
+                }
                 container.appendChild(newItem);
             });
             

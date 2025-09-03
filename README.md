@@ -120,7 +120,7 @@ ssh -L 9999:localhost:9999 [VM_USER]@[VM_IP]
 # 그 후 http://localhost:9999 접속
 ```
 
-### ngrok 터널링 (공개 접속)
+### ngrok (공개 접속)
 ```bash
 # ngrok 설치 (Windows)
 # https://ngrok.com/download 에서 다운로드
@@ -129,7 +129,7 @@ ssh -L 9999:localhost:9999 [VM_USER]@[VM_IP]
 ngrok http 9999
 
 # 백그라운드 실행 (Windows)
-start /B ngrok http 9999
+ ngrok http 9999 --url https://selected-real-dogfish.ngrok-free.app &
 
 # 현재 도메인: https://selected-real-dogfish.ngrok-free.app
 ```

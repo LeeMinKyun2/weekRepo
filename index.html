@@ -123,13 +123,24 @@
         }
 
         function gisLoaded() {
+            console.log('🔧 GIS (Google Identity Services) 로드됨');
+            console.log('🔧 CLIENT_ID:', CLIENT_ID);
+            console.log('🔧 SCOPES:', SCOPES);
+            console.log('🔧 현재 URL:', window.location.href);
+            console.log('🔧 현재 Origin:', window.location.origin);
+            
             tokenClient = google.accounts.oauth2.initTokenClient({
                 client_id: CLIENT_ID,
                 scope: SCOPES,
                 callback: (resp) => {
+                    console.log('🔧 OAuth 콜백 응답:', resp);
                     if (resp.error !== undefined) {
+                        console.error('❌ OAuth 오류:', resp.error);
+                        console.error('❌ 오류 상세:', resp.error_description);
+                        console.error('❌ 전체 응답:', resp);
                         throw (resp);
                     }
+                    console.log('✅ OAuth 성공, 토큰 설정');
                     gapi.client.setToken(resp);
                 },
             });
@@ -154,7 +165,9 @@
         }
 
         async function populateDropdowns() {
-            console.log('populateDropdowns function called.'); // 함수 시작점 로그 추가
+            console.log('🔧 populateDropdowns 함수 시작');
+            console.log('🔧 gapi.client 상태:', gapi.client);
+            console.log('🔧 현재 토큰:', gapi.client.getToken());
             const managerSelect = document.getElementById('manager');
             const siteSelect = document.getElementById('site_name');
             const reportSheetNameSelect = document.getElementById('reportSheetName');

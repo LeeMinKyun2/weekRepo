@@ -141,7 +141,7 @@ docker run -p 9999:80 minkyun2223/week_repo:local
 
 ## 📊 버전 히스토리
 
-- **v1.1.2**: GitHub Secrets 설정 완료, CI/CD 파이프라인 활성화
+- **v1.1.3**: CI/CD 파이프라인 재배포 테스트
 - **v1.1.1**: REPORT_SHEET_ID 오류 수정, Google Sheets 링크 추가
 - **v1.1.0**: Google Sheets 링크 기능 추가
 - **v1.0.0**: 초기 버전, 기본 기능 구현

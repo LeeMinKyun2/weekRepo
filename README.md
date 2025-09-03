@@ -95,6 +95,7 @@ week_report/
    - `http://localhost:9999`
    - `http://127.0.0.1:9999`
    - VM IP 주소 (예: `http://192.168.123.111:9999`)
+   - ngrok 도메인 (예: `https://selected-real-dogfish.ngrok-free.app`)
 
 ### API 제한사항
 - **읽기 요청**: 분당 300회 (프로젝트별), 60회 (사용자별)
@@ -119,6 +120,27 @@ ssh -L 9999:localhost:9999 [VM_USER]@[VM_IP]
 # 그 후 http://localhost:9999 접속
 ```
 
+### ngrok 터널링 (공개 접속)
+```bash
+# ngrok 설치 (Windows)
+# https://ngrok.com/download 에서 다운로드
+
+# 9999 포트 터널링
+ngrok http 9999
+
+# 백그라운드 실행 (Windows)
+start /B ngrok http 9999
+
+# 현재 도메인: https://selected-real-dogfish.ngrok-free.app
+```
+
+#### ngrok 설정 방법
+1. **ngrok 계정 생성**: https://ngrok.com
+2. **인증 토큰 설정**: `ngrok config add-authtoken YOUR_TOKEN`
+3. **터널 실행**: `ngrok http 9999`
+4. **Google OAuth 설정**: ngrok 도메인을 Google Cloud Console에 추가
+   - `https://selected-real-dogfish.ngrok-free.app`
+
 ## 🛠️ 개발 환경 설정
 
 ### 로컬 테스트
@@ -141,7 +163,7 @@ docker run -p 9999:80 minkyun2223/week_repo:local
 
 ## 📊 버전 히스토리
 
-- **v1.1.3**: CI/CD 파이프라인 재배포 테스트
+- **v1.1.4**: ngrok 터널링 설정 가이드 추가
 - **v1.1.1**: REPORT_SHEET_ID 오류 수정, Google Sheets 링크 추가
 - **v1.1.0**: Google Sheets 링크 기능 추가
 - **v1.0.0**: 초기 버전, 기본 기능 구현

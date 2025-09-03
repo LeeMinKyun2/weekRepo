@@ -18,6 +18,79 @@
             box-sizing: border-box;
         }
         textarea { resize: vertical; min-height: 100px; }
+        
+        /* 리스트 입력 스타일 */
+        .list-input-container {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            background-color: #f9f9f9;
+        }
+        
+        .list-input-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .list-input-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .list-input-item input {
+            flex: 1;
+            margin-right: 8px;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            /* 모바일에서 줄바꿈 방지 */
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .list-input-item .remove-btn {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .list-input-item .remove-btn:hover {
+            background-color: #c82333;
+        }
+        
+        .add-item-btn {
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 13px;
+            margin-top: 8px;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .add-item-btn:hover {
+            background-color: #5a6268;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .add-item-btn:active {
+            transform: translateY(0);
+        }
         button {
             background-color: #4CAF50;
             color: white;
@@ -46,6 +119,24 @@
             margin-bottom: 20px;
         }
         
+        .header-buttons {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .navigation-info {
+            background-color: #e3f2fd;
+            color: #1976d2;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 500;
+            border-left: 3px solid #2196F3;
+            max-width: 200px;
+            text-align: center;
+        }
+        
         .help-button {
             background-color: #2196F3;
             color: white;
@@ -58,6 +149,26 @@
         
         .help-button:hover {
             background-color: #1976D2;
+        }
+        
+        /* 버튼 그룹 스타일 */
+        .button-group {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .button-group button {
+            flex: 1;
+        }
+        
+        /* 매니저/사이트 조회 버튼 중앙정렬 */
+        .query-button-container {
+            text-align: center;
+            margin: 15px 0;
+        }
+        
+        .query-button-container button {
+            margin: 0 auto;
         }
         
         /* 모달 스타일 */
@@ -164,8 +275,18 @@
                 align-items: stretch;
             }
             
-            .help-button {
+            .header-buttons {
+                flex-direction: column;
+                gap: 8px;
                 margin-top: 10px;
+            }
+            
+            .navigation-info {
+                max-width: none;
+                font-size: 12px;
+            }
+            
+            .help-button {
                 align-self: flex-end;
             }
             
@@ -264,7 +385,10 @@
     <div class="container">
         <div class="header-section">
             <h1>주간 업무 보고 입력</h1>
-            <button id="helpButton" class="help-button">📖 사용법</button>
+            <div class="header-buttons">
+                <div id="navigationInfo" class="navigation-info">매니저/사이트 목록을 조회하세요</div>
+                <button id="helpButton" class="help-button">📖 사용법</button>
+            </div>
         </div>
         <form id="reportForm">
             <div class="form-group">
@@ -287,24 +411,45 @@
                     <option value="">선택하세요</option>
                 </select>
             </div>
-            <div class="form-group">
+            <div class="form-group query-button-container">
                 <button type="button" id="queryDropdownsButton" disabled>매니저/사이트 목록 조회</button>
-                <button type="button" id="confirmSiteButton" disabled>고정/선택</button>
             </div>
-            <div class="form-group">
+            <div class="form-group button-group">
+                <button type="button" id="confirmSiteButton" disabled>고정/선택</button>
                 <button type="button" id="readReportButton" disabled>보고서 조회</button>
             </div>
             <div class="form-group">
                 <label for="this_week_tasks">금주 한 일:</label>
-                <textarea id="this_week_tasks" name="this_week_tasks" required></textarea>
+                <div class="list-input-container" id="this_week_tasks_container">
+                    <div class="list-input-item">
+                        <input type="text" placeholder="금주 한 일을 입력하세요..." class="list-input" 
+                               onkeydown="preventEnterSubmit(event)" onkeypress="preventEnterSubmit(event)">
+                        <button type="button" class="remove-btn" onclick="removeListItem(this)">×</button>
+                    </div>
+                </div>
+                <button type="button" class="add-item-btn" onclick="addListItem('this_week_tasks_container')">+ 항목 추가</button>
             </div>
             <div class="form-group">
-                <label for="next_week_tasks">차주 할 일:</label>
-                <textarea id="next_week_tasks" name="next_week_tasks" required></textarea>
+                <label for="next_week_tasks">향후 할 일:</label>
+                <div class="list-input-container" id="next_week_tasks_container">
+                    <div class="list-input-item">
+                        <input type="text" placeholder="향후 할 일을 입력하세요..." class="list-input"
+                               onkeydown="preventEnterSubmit(event)" onkeypress="preventEnterSubmit(event)">
+                        <button type="button" class="remove-btn" onclick="removeListItem(this)">×</button>
+                    </div>
+                </div>
+                <button type="button" class="add-item-btn" onclick="addListItem('next_week_tasks_container')">+ 항목 추가</button>
             </div>
             <div class="form-group">
                 <label for="customer_requests">고객 요청사항:</label>
-                <textarea id="customer_requests" name="customer_requests"></textarea>
+                <div class="list-input-container" id="customer_requests_container">
+                    <div class="list-input-item">
+                        <input type="text" placeholder="고객 요청사항을 입력하세요..." class="list-input"
+                               onkeydown="preventEnterSubmit(event)" onkeypress="preventEnterSubmit(event)">
+                        <button type="button" class="remove-btn" onclick="removeListItem(this)">×</button>
+                    </div>
+                </div>
+                <button type="button" class="add-item-btn" onclick="addListItem('customer_requests_container')">+ 항목 추가</button>
             </div>
             <button type="submit" disabled>보고서 제출</button>
         </form>
@@ -348,6 +493,14 @@
                     <div class="step-content">
                         <strong>보고서 제출</strong><br>
                         텍스트를 입력한 후 "보고서 제출" 버튼을 클릭합니다.
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">5️⃣</div>
+                    <div class="step-content">
+                        <strong>수정 시</strong><br>
+                        기존 데이터를 수정할 때는 "보고서 조회" 버튼으로 데이터를 불러온 후 수정하고 "보고서 제출" 버튼을 클릭합니다.
                     </div>
                 </div>
                 
@@ -430,12 +583,12 @@
                 document.getElementById('queryDropdownsButton').disabled = false;
                 document.querySelector('button[type="submit"]').disabled = false;
                 console.log('Dropdowns and Submit buttons enabled.'); // 버튼 활성화 로그 추가
-                updateReadReportButtonState(); // 초기 로드 시 보고서 조회 버튼 상태 설정
-                updateConfirmSiteButtonState(); // 초기 로드 시 "고정/선택" 버튼 상태 설정
             } else {
                 console.log('Dropdowns and Submit buttons NOT yet enabled (waiting for gapi/gis init).'); // 버튼 비활성화 상태 로그 추가
             }
         }
+
+
 
         async function populateDropdowns() {
             console.log('🔧 populateDropdowns 함수 시작');
@@ -620,23 +773,22 @@
                         📊 Google Sheets에서 확인하기
                     </a>
                 `;
+                
+                // 네비게이션 정보 업데이트
+                updateNavigationInfo('매니저, 사이트, 보고서를 선택한 후 고정/선택을 누르세요');
                 document.getElementById('response').style.display = 'block';
 
-                // 드롭다운 조회 버튼 상태 변경
-                queryButton.textContent = '조회 완료';
-                queryButton.style.backgroundColor = '#6c757d'; // 회색 계열 색상
-                queryButton.disabled = true; // 버튼 비활성화
+                // 드롭다운 조회 버튼 숨김 처리
+                queryButton.style.display = 'none';
 
             } catch (err) {
                 console.error('Error fetching dropdown data (detailed):', err); // 상세 오류 출력
                 document.getElementById('response').textContent = '드롭다운 데이터를 불러오는 데 실패했습니다: ' + (err.result?.error?.message || err.message || JSON.stringify(err));
                 document.getElementById('response').style.display = 'block';
 
-                // 오류 발생 시 버튼 상태를 초기화
+                // 오류 발생 시에도 버튼 숨김 (재시도는 페이지 새로고침으로)
                 const queryButton = document.getElementById('queryDropdownsButton');
-                queryButton.textContent = '매니저/사이트 목록 조회';
-                queryButton.style.backgroundColor = '#4CAF50'; // 원래 색상
-                queryButton.disabled = false; // 다시 활성화
+                queryButton.style.display = 'none';
             }
         }
 
@@ -701,7 +853,7 @@
          * @param {string} selectedSite 선택된 사이트명
          */
         function toggleCustomerRequestsField(selectedSite) {
-            const customerRequestsField = document.getElementById('customer_requests');
+            const customerRequestsContainer = document.getElementById('customer_requests_container');
             const customerRequestsLabel = document.querySelector('label[for="customer_requests"]');
             
             console.log('toggleCustomerRequestsField called with:', selectedSite);
@@ -709,19 +861,18 @@
             
             if (sitesWithoutCustomerRequests.includes(selectedSite)) {
                 // 고객 요청사항 입력 불가 사이트인 경우
-                customerRequestsField.disabled = true;
-                customerRequestsField.value = ''; // 기존 값 초기화
-                customerRequestsField.placeholder = '해당 사이트는 고객 요청사항 입력이 불가합니다.';
-                customerRequestsField.style.backgroundColor = '#f5f5f5';
-                customerRequestsField.style.color = '#999';
+                customerRequestsContainer.style.opacity = '0.5';
+                customerRequestsContainer.style.pointerEvents = 'none';
+                customerRequestsContainer.style.backgroundColor = '#f5f5f5';
                 customerRequestsLabel.style.color = '#999';
                 customerRequestsLabel.textContent = '고객 요청사항 (입력 불가)';
+                // 기존 값 초기화
+                setListData('customer_requests_container', '');
             } else {
                 // 일반 사이트인 경우
-                customerRequestsField.disabled = false;
-                customerRequestsField.placeholder = '고객 요청사항을 입력하세요 (없으면 "없음" 입력)';
-                customerRequestsField.style.backgroundColor = '';
-                customerRequestsField.style.color = '';
+                customerRequestsContainer.style.opacity = '1';
+                customerRequestsContainer.style.pointerEvents = 'auto';
+                customerRequestsContainer.style.backgroundColor = '';
                 customerRequestsLabel.style.color = '';
                 customerRequestsLabel.textContent = '고객 요청사항';
             }
@@ -735,6 +886,7 @@
             const siteSelected = document.getElementById('site_name').value;
             const reportSheetSelected = document.getElementById('reportSheetName').value;
             const responseDiv = document.getElementById('response');
+            const confirmButton = document.getElementById('confirmSiteButton');
             
             // 모든 드롭다운이 선택되었는지 확인
             if (!managerSelected || !siteSelected || !reportSheetSelected) {
@@ -744,6 +896,11 @@
                 responseDiv.style.color = '#c62828';
                 return;
             }
+            
+            // 버튼 시각적 피드백
+            confirmButton.disabled = true;
+            confirmButton.textContent = '처리 중...';
+            confirmButton.style.backgroundColor = '#6c757d';
             
             // 디버깅을 위한 로그 추가
             console.log('Selected site:', siteSelected);
@@ -769,6 +926,16 @@
             responseDiv.style.display = 'block';
             responseDiv.style.backgroundColor = '#e8f5e8';
             responseDiv.style.color = '#2e7d32';
+            
+            // 네비게이션 정보 업데이트
+            updateNavigationInfo('아래 텍스트를 입력한 후 보고서 제출을 누르세요');
+            
+            // 1초 후 버튼 상태 복원
+            setTimeout(() => {
+                confirmButton.disabled = false;
+                confirmButton.textContent = '고정/선택';
+                confirmButton.style.backgroundColor = '#2196F3';
+            }, 1000);
         }
 
         /**
@@ -849,6 +1016,12 @@
         document.getElementById('reportForm').addEventListener('submit', async function(event) {
             event.preventDefault();
 
+            // 엔터키로 제출되는 것을 방지 (버튼 클릭으로만 제출)
+            if (event.submitter === null) {
+                console.log('Form submission blocked - only button clicks allowed');
+                return;
+            }
+
             if (!gapi.client.getToken()) {
                 // 토큰이 없으면 승인 요청
                 tokenClient.callback = async (resp) => {
@@ -869,12 +1042,14 @@
             const formData = {
                 site_name: document.getElementById('site_name').value,
                 manager: document.getElementById('manager').value,
-                this_week_tasks: document.getElementById('this_week_tasks').value,
-                next_week_tasks: document.getElementById('next_week_tasks').value,
-                customer_requests: document.getElementById('customer_requests').value
+                this_week_tasks: getListData('this_week_tasks_container'),
+                next_week_tasks: getListData('next_week_tasks_container'),
+                customer_requests: getListData('customer_requests_container')
             };
 
             console.log('Form Data:', formData);
+            console.log('Sites without customer requests:', sitesWithoutCustomerRequests);
+            console.log('Is current site in exception list?', sitesWithoutCustomerRequests.includes(formData.site_name));
 
             const responseDiv = document.getElementById('response');
             responseDiv.style.display = 'block';
@@ -989,10 +1164,10 @@
                 console.log('Site dropdown value before clearing text fields:', document.getElementById('site_name').value);
                 console.log('Report Sheet Name dropdown value before clearing text fields:', document.getElementById('reportSheetName').value);
 
-                // 텍스트 필드만 초기화
-                document.getElementById('this_week_tasks').value = '';
-                document.getElementById('next_week_tasks').value = '';
-                document.getElementById('customer_requests').value = '';
+                // 리스트 필드만 초기화
+                setListData('this_week_tasks_container', '');
+                setListData('next_week_tasks_container', '');
+                setListData('customer_requests_container', '');
 
             } catch (err) {
                 console.error('Error submitting report:', err);
@@ -1068,16 +1243,19 @@
 
                 const values = readResponse.result.valueRanges || [];
 
-                // 텍스트 필드에 데이터 출력
-                document.getElementById('this_week_tasks').value = (values[0] && values[0].values && values[0].values[0]) ? values[0].values[0][0].replace(/^▶\s*/, '') : '';
-                document.getElementById('next_week_tasks').value = (values[1] && values[1].values && values[1].values[0]) ? values[1].values[0][0].replace(/^▶\s*/, '') : '';
+                // 리스트 필드에 데이터 출력 (▶는 setListData에서 자동 제거됨)
+                const thisWeekTasks = (values[0] && values[0].values && values[0].values[0]) ? values[0].values[0][0] : '';
+                const nextWeekTasks = (values[1] && values[1].values && values[1].values[0]) ? values[1].values[0][0] : '';
+                setListData('this_week_tasks_container', thisWeekTasks);
+                setListData('next_week_tasks_container', nextWeekTasks);
                 
                 // 예외 사이트가 아닌 경우에만 고객 요청사항 읽기
                 if (!sitesWithoutCustomerRequests.includes(selectedSiteName)) {
                     // 예외 사이트가 아닌 경우 values[2]가 고객 요청사항
-                    document.getElementById('customer_requests').value = (values[2] && values[2].values && values[2].values[0]) ? values[2].values[0][0].replace(/^▶\s*/, '') : '';
+                    const customerRequests = (values[2] && values[2].values && values[2].values[0]) ? values[2].values[0][0] : '';
+                    setListData('customer_requests_container', customerRequests);
                 } else {
-                    document.getElementById('customer_requests').value = ''; // 예외 사이트는 빈 값으로 설정
+                    setListData('customer_requests_container', ''); // 예외 사이트는 빈 값으로 설정
                 }
 
                 // Google Sheets 링크 생성 (선택된 보고서 시트에 따라)
@@ -1142,6 +1320,142 @@
                 helpModal.style.display = 'none';
             }
         });
+
+        // 폼 내부에서 엔터키로 제출되는 것을 방지 (데스크톱 + 모바일)
+        document.getElementById('reportForm').addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                // 입력 필드에서 엔터키를 누른 경우 제출 방지
+                if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+                    event.preventDefault();
+                    console.log('Enter key submission blocked in form fields');
+                }
+            }
+        });
+
+        // 모바일에서 가상 키보드의 "완료" 버튼으로 제출되는 것을 방지
+        document.getElementById('reportForm').addEventListener('keypress', function(event) {
+            if (event.key === 'Enter' || event.keyCode === 13) {
+                // 모바일 가상 키보드의 완료 버튼 방지
+                if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+                    event.preventDefault();
+                    console.log('Mobile keyboard submission blocked');
+                }
+            }
+        });
+
+        // 엔터키 제출 방지 함수 (모바일 + 데스크톱)
+        function preventEnterSubmit(event) {
+            if (event.key === 'Enter' || event.keyCode === 13) {
+                event.preventDefault();
+                console.log('Enter key submission prevented');
+                return false;
+            }
+        }
+
+        // 네비게이션 정보 업데이트 함수
+        function updateNavigationInfo(message) {
+            const navInfo = document.getElementById('navigationInfo');
+            navInfo.textContent = message;
+        }
+
+        // 리스트 항목 추가 함수
+        function addListItem(containerId) {
+            const container = document.getElementById(containerId);
+            const newItem = document.createElement('div');
+            newItem.className = 'list-input-item';
+            newItem.innerHTML = `
+                <input type="text" placeholder="항목을 입력하세요..." class="list-input"
+                       onkeydown="preventEnterSubmit(event)" onkeypress="preventEnterSubmit(event)">
+                <button type="button" class="remove-btn" onclick="removeListItem(this)">×</button>
+            `;
+            container.appendChild(newItem);
+        }
+
+        // 리스트 항목 제거 함수
+        function removeListItem(button) {
+            const container = button.closest('.list-input-container');
+            const items = container.querySelectorAll('.list-input-item');
+            const currentItem = button.closest('.list-input-item');
+            
+            if (items.length > 1) {
+                // 여러 항목이 있으면 삭제
+                currentItem.remove();
+            } else {
+                // 첫 번째 항목이면 값만 비우기
+                const input = currentItem.querySelector('.list-input');
+                input.value = '';
+                input.focus(); // 포커스 이동
+            }
+        }
+
+        // 리스트 데이터를 텍스트로 변환하는 함수 (Sheet용 - 첫 줄 제외하고 ▶ 추가)
+        function getListData(containerId) {
+            const container = document.getElementById(containerId);
+            const inputs = container.querySelectorAll('.list-input');
+            const values = Array.from(inputs)
+                .map(input => input.value.trim())
+                .filter(value => value !== '') // 공백 항목 제거
+                .map((value, index) => {
+                    // 기존 텍스트에서 ▶ 제거하고 깨끗한 텍스트만 추출
+                    const cleanValue = value.replace(/^▶\s*/, '').trim();
+                    
+                    // 공백이 아닌 경우에만 처리
+                    if (cleanValue === '') {
+                        return null;
+                    }
+                    
+                    // 첫 줄(index 0)은 ▶ 없이, 나머지는 ▶ 추가
+                    if (index === 0) {
+                        console.log(`First line: "${value}" -> clean: "${cleanValue}" -> final: "${cleanValue}"`);
+                        return cleanValue;
+                    } else {
+                        console.log(`Other line: "${value}" -> clean: "${cleanValue}" -> final: "▶ ${cleanValue}"`);
+                        return `▶ ${cleanValue}`;
+                    }
+                })
+                .filter(value => value !== null); // null 값 제거
+            const result = values.join('\n');
+            console.log(`getListData result for ${containerId}:`, result);
+            return result;
+        }
+
+        // 리스트 데이터를 텍스트로 변환하는 함수 (표시용 - ▶ 없이)
+        function getListDataForDisplay(containerId) {
+            const container = document.getElementById(containerId);
+            const inputs = container.querySelectorAll('.list-input');
+            const values = Array.from(inputs)
+                .map(input => input.value.trim())
+                .filter(value => value !== '');
+            return values.join('\n');
+        }
+
+        // 텍스트를 리스트로 설정하는 함수 (▶ 제거하여 표시)
+        function setListData(containerId, text) {
+            const container = document.getElementById(containerId);
+            const lines = text.split('\n').filter(line => line.trim() !== '');
+            
+            // 기존 항목들 제거
+            container.innerHTML = '';
+            
+            // 새 항목들 추가 (▶ 완전 제거)
+            lines.forEach((line, index) => {
+                // 모든 ▶ 기호와 공백 제거
+                const cleanLine = line.replace(/^▶\s*/g, '').trim();
+                const newItem = document.createElement('div');
+                newItem.className = 'list-input-item';
+                newItem.innerHTML = `
+                    <input type="text" value="${cleanLine}" class="list-input"
+                           onkeydown="preventEnterSubmit(event)" onkeypress="preventEnterSubmit(event)">
+                    <button type="button" class="remove-btn" onclick="removeListItem(this)">×</button>
+                `;
+                container.appendChild(newItem);
+            });
+            
+            // 빈 항목이 없으면 하나 추가
+            if (lines.length === 0) {
+                addListItem(containerId);
+            }
+        }
 
         /**
          * 시트 데이터에서 특정 site_name을 찾아 해당 셀의 0-based 행과 열 인덱스를 반환합니다.

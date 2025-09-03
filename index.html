@@ -37,11 +37,159 @@
         }
         #confirmSiteButton:hover:not(:disabled) { background-color: #1976D2; }
         .response { margin-top: 20px; padding: 10px; background-color: #e2e2e2; border-radius: 4px; }
+        
+        /* 헤더 섹션 스타일 */
+        .header-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .help-button {
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .help-button:hover {
+            background-color: #1976D2;
+        }
+        
+        /* 모달 스타일 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 0;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid #ddd;
+            background-color: #f8f9fa;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .modal-header h2 {
+            margin: 0;
+            color: #333;
+        }
+        
+        .close {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .close:hover {
+            color: #000;
+        }
+        
+        .modal-body {
+            padding: 20px;
+        }
+        
+        .step {
+            display: flex;
+            margin-bottom: 20px;
+            align-items: flex-start;
+        }
+        
+        .step-number {
+            font-size: 24px;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+        
+        .step-content {
+            flex: 1;
+            line-height: 1.6;
+        }
+        
+        .step-content strong {
+            color: #2196F3;
+            font-size: 16px;
+        }
+        
+        .account-info {
+            background-color: #e3f2fd;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 20px;
+            border-left: 4px solid #2196F3;
+        }
+        
+        .account-info h3 {
+            margin: 0 0 10px 0;
+            color: #1976D2;
+        }
+        
+        .account-info p {
+            margin: 5px 0;
+            font-family: monospace;
+            background-color: #fff;
+            padding: 5px 10px;
+            border-radius: 4px;
+        }
+        
+        /* 반응형 디자인 */
+        @media (max-width: 768px) {
+            .header-section {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .help-button {
+                margin-top: 10px;
+                align-self: flex-end;
+            }
+            
+            .modal-content {
+                width: 95%;
+                margin: 10% auto;
+            }
+            
+            .step {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .step-number {
+                margin-right: 0;
+                margin-bottom: 10px;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>주간 업무 보고 입력</h1>
+        <div class="header-section">
+            <h1>주간 업무 보고 입력</h1>
+            <button id="helpButton" class="help-button">📖 사용법</button>
+        </div>
         <form id="reportForm">
             <div class="form-group">
                 <label for="manager">매니저 이름:</label>
@@ -85,6 +233,55 @@
             <button type="submit" disabled>보고서 제출</button>
         </form>
         <div id="response" class="response" style="display: none;"></div>
+    </div>
+
+    <!-- 사용법 팝업 모달 -->
+    <div id="helpModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📖 사용법</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="step">
+                    <div class="step-number">1️⃣</div>
+                    <div class="step-content">
+                        <strong>매니저/사이트 목록 조회</strong><br>
+                        "매니저/사이트 목록 조회" 버튼을 클릭하여 데이터를 불러옵니다.
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">2️⃣</div>
+                    <div class="step-content">
+                        <strong>정보 선택</strong><br>
+                        매니저 이름, 담당 사이트, 보고서 시트를 선택합니다.
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">3️⃣</div>
+                    <div class="step-content">
+                        <strong>고정/선택</strong><br>
+                        "고정/선택" 버튼을 클릭하여 사이트별 설정을 확인합니다.
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">4️⃣</div>
+                    <div class="step-content">
+                        <strong>보고서 제출</strong><br>
+                        텍스트를 입력한 후 "보고서 제출" 버튼을 클릭합니다.
+                    </div>
+                </div>
+                
+                <div class="account-info">
+                    <h3>🔐 Google 공용 계정</h3>
+                    <p><strong>ID:</strong> interezen502@gmail.com</p>
+                    <p><strong>PW:</strong> inter502</p>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -842,6 +1039,33 @@
 
         // 보고서 조회 버튼 이벤트 리스너
         document.getElementById('readReportButton').addEventListener('click', readReportData);
+
+        // 사용법 팝업 이벤트 리스너
+        const helpButton = document.getElementById('helpButton');
+        const helpModal = document.getElementById('helpModal');
+        const closeButton = document.querySelector('.close');
+
+        helpButton.addEventListener('click', function() {
+            helpModal.style.display = 'block';
+        });
+
+        closeButton.addEventListener('click', function() {
+            helpModal.style.display = 'none';
+        });
+
+        // 배경 클릭 시 모달 닫기
+        window.addEventListener('click', function(event) {
+            if (event.target === helpModal) {
+                helpModal.style.display = 'none';
+            }
+        });
+
+        // ESC 키로 모달 닫기
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape' && helpModal.style.display === 'block') {
+                helpModal.style.display = 'none';
+            }
+        });
 
         /**
          * 시트 데이터에서 특정 site_name을 찾아 해당 셀의 0-based 행과 열 인덱스를 반환합니다.

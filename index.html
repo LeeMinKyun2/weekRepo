@@ -36,6 +36,70 @@
             margin-bottom: 0;
         }
         label { display: block; margin-bottom: 5px; font-weight: bold; }
+        
+        /* 섹션 제목과 체크박스 스타일 */
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 5px;
+        }
+        
+        .section-header label {
+            margin: 0;
+            flex: 1;
+        }
+        
+        .section-header .none-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .section-header .none-checkbox input[type="checkbox"] {
+            margin: 0;
+            width: auto;
+        }
+        
+        .section-header .none-checkbox label {
+            margin: 0;
+            font-weight: normal;
+            cursor: pointer;
+        }
+        
+        /* 비활성화된 섹션 스타일 */
+        .section-disabled {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        
+        /* 비활성화된 체크박스와 버튼 스타일 */
+        .section-disabled .none-checkbox input[type="checkbox"] {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        
+        .section-disabled .none-checkbox label {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        
+        .section-disabled .add-item-btn {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        
+        /* 제출 버튼 중앙 정렬 */
+        .submit-button-container {
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .submit-button-container button {
+            margin: 0 auto;
+        }
         input[type="text"], textarea, select {
             width: 100%;
             padding: 10px;
@@ -168,6 +232,40 @@
         
         .list-input-item.customer-request-item .remove-btn:hover {
             background-color: #c82333;
+        }
+        
+        /* 작업 대상 선택 스타일 */
+        .list-input-item .target-label {
+            display: inline-block;
+            margin-bottom: 4px;
+            font-size: 12px;
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .list-input-item .target-checkboxes {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .list-input-item .target-checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .list-input-item .target-checkbox-item input[type="checkbox"] {
+            margin: 0;
+            width: auto;
+        }
+        
+        .list-input-item .target-checkbox-item label {
+            margin: 0;
+            font-size: 12px;
+            font-weight: normal;
+            cursor: pointer;
         }
         
         .list-input-item .remove-btn {
@@ -547,9 +645,30 @@
             <div class="form-section">
                 <h3>📝 보고서 작성</h3>
                 <div class="form-group">
-                    <label for="this_week_tasks">금주 한 일:</label>
+                    <div class="section-header">
+                        <label for="this_week_tasks">금주 한 일:</label>
+                        <div class="none-checkbox">
+                            <input type="checkbox" id="this_week_none" onchange="toggleSection('this_week_tasks_container', this.checked)">
+                            <label for="this_week_none">없음</label>
+                        </div>
+                    </div>
                     <div class="list-input-container" id="this_week_tasks_container">
-                        <div class="list-input-item">
+                        <div class="list-input-item customer-request-item">
+                            <div class="target-label">(작업 대상)</div>
+                            <div class="target-checkboxes">
+                                <div class="target-checkbox-item">
+                                    <input type="checkbox" id="this_week_dev_1" name="this_week_target_1" value="개발계">
+                                    <label for="this_week_dev_1">개발계</label>
+                                </div>
+                                <div class="target-checkbox-item">
+                                    <input type="checkbox" id="this_week_ops_1" name="this_week_target_1" value="운영계">
+                                    <label for="this_week_ops_1">운영계</label>
+                                </div>
+                                <div class="target-checkbox-item">
+                                    <input type="checkbox" id="this_week_etc_1" name="this_week_target_1" value="기타">
+                                    <label for="this_week_etc_1">기타</label>
+                                </div>
+                            </div>
                             <input type="text" placeholder="금주 한 일을 입력하세요..." class="list-input"
                                    onkeydown="preventEnterSubmit(event)" onkeypress="preventEnterSubmit(event)">
                             <button type="button" class="remove-btn" onclick="removeListItem(this)">×</button>
@@ -558,9 +677,30 @@
                     <button type="button" class="add-item-btn" onclick="addListItem('this_week_tasks_container')">+ 항목 추가</button>
                 </div>
                 <div class="form-group">
-                    <label for="next_week_tasks">향후 할 일:</label>
+                    <div class="section-header">
+                        <label for="next_week_tasks">향후 할 일:</label>
+                        <div class="none-checkbox">
+                            <input type="checkbox" id="next_week_none" onchange="toggleSection('next_week_tasks_container', this.checked)">
+                            <label for="next_week_none">없음</label>
+                        </div>
+                    </div>
                     <div class="list-input-container" id="next_week_tasks_container">
-                        <div class="list-input-item">
+                        <div class="list-input-item customer-request-item">
+                            <div class="target-label">(작업 대상)</div>
+                            <div class="target-checkboxes">
+                                <div class="target-checkbox-item">
+                                    <input type="checkbox" id="next_week_dev_1" name="next_week_target_1" value="개발계">
+                                    <label for="next_week_dev_1">개발계</label>
+                                </div>
+                                <div class="target-checkbox-item">
+                                    <input type="checkbox" id="next_week_ops_1" name="next_week_target_1" value="운영계">
+                                    <label for="next_week_ops_1">운영계</label>
+                                </div>
+                                <div class="target-checkbox-item">
+                                    <input type="checkbox" id="next_week_etc_1" name="next_week_target_1" value="기타">
+                                    <label for="next_week_etc_1">기타</label>
+                                </div>
+                            </div>
                             <input type="text" placeholder="향후 할 일을 입력하세요..." class="list-input"
                                    onkeydown="preventEnterSubmit(event)" onkeypress="preventEnterSubmit(event)">
                             <button type="button" class="remove-btn" onclick="removeListItem(this)">×</button>
@@ -569,7 +709,13 @@
                     <button type="button" class="add-item-btn" onclick="addListItem('next_week_tasks_container')">+ 항목 추가</button>
                 </div>
                 <div class="form-group">
-                    <label for="customer_requests">고객 요청사항:</label>
+                    <div class="section-header">
+                        <label for="customer_requests">고객 요청사항:</label>
+                        <div class="none-checkbox">
+                            <input type="checkbox" id="customer_requests_none" onchange="toggleSection('customer_requests_container', this.checked)">
+                            <label for="customer_requests_none">없음</label>
+                        </div>
+                    </div>
                     <div class="list-input-container" id="customer_requests_container">
                         <div class="list-input-item customer-request-item">
                             <div class="date-label">(발생일)</div>
@@ -581,7 +727,7 @@
                     </div>
                     <button type="button" class="add-item-btn" onclick="addListItem('customer_requests_container')">+ 항목 추가</button>
                 </div>
-                <div class="form-group">
+                <div class="form-group submit-button-container">
                     <button type="submit" disabled>보고서 제출</button>
                 </div>
             </div>
@@ -988,6 +1134,8 @@
         function toggleCustomerRequestsField(selectedSite) {
             const customerRequestsContainer = document.getElementById('customer_requests_container');
             const customerRequestsLabel = document.querySelector('label[for="customer_requests"]');
+            const noneCheckbox = document.getElementById('customer_requests_none');
+            const addItemBtn = customerRequestsContainer.parentElement.querySelector('.add-item-btn');
             
             console.log('toggleCustomerRequestsField called with:', selectedSite);
             console.log('Checking if site is in exception list...');
@@ -999,6 +1147,18 @@
                 customerRequestsContainer.style.backgroundColor = '#f5f5f5';
                 customerRequestsLabel.style.color = '#999';
                 customerRequestsLabel.textContent = '고객 요청사항 (입력 불가)';
+                
+                // "없음" 체크박스 비활성화
+                if (noneCheckbox) {
+                    noneCheckbox.disabled = true;
+                    noneCheckbox.checked = false;
+                }
+                
+                // "항목 추가" 버튼 비활성화
+                if (addItemBtn) {
+                    addItemBtn.disabled = true;
+                }
+                
                 // 기존 값 초기화
                 setListData('customer_requests_container', '');
             } else {
@@ -1008,6 +1168,16 @@
                 customerRequestsContainer.style.backgroundColor = '';
                 customerRequestsLabel.style.color = '';
                 customerRequestsLabel.textContent = '고객 요청사항';
+                
+                // "없음" 체크박스 활성화
+                if (noneCheckbox) {
+                    noneCheckbox.disabled = false;
+                }
+                
+                // "항목 추가" 버튼 활성화
+                if (addItemBtn) {
+                    addItemBtn.disabled = false;
+                }
             }
         }
 
@@ -1491,6 +1661,30 @@
             navInfo.textContent = message;
         }
 
+        // 섹션 활성화/비활성화 함수
+        function toggleSection(containerId, isChecked) {
+            const container = document.getElementById(containerId);
+            const addButton = container.nextElementSibling;
+            
+            if (isChecked) {
+                // "없음" 체크 시 섹션 비활성화
+                container.classList.add('section-disabled');
+                if (addButton && addButton.classList.contains('add-item-btn')) {
+                    addButton.style.display = 'none';
+                }
+                // 기존 내용 초기화
+                container.innerHTML = '';
+            } else {
+                // "없음" 체크 해제 시 섹션 활성화
+                container.classList.remove('section-disabled');
+                if (addButton && addButton.classList.contains('add-item-btn')) {
+                    addButton.style.display = 'block';
+                }
+                // 빈 항목 추가
+                addListItem(containerId);
+            }
+        }
+
         // 리스트 항목 추가 함수
         function addListItem(containerId) {
             const container = document.getElementById(containerId);
@@ -1504,6 +1698,33 @@
                     <div class="date-label">(발생일)</div>
                     <input type="date" class="date-input" title="발생일 선택">
                     <input type="text" placeholder="고객 요청사항을 입력하세요..." class="list-input"
+                           onkeydown="preventEnterSubmit(event)" onkeypress="preventEnterSubmit(event)">
+                    <button type="button" class="remove-btn" onclick="removeListItem(this)">×</button>
+                `;
+            } else if (containerId === 'this_week_tasks_container' || containerId === 'next_week_tasks_container') {
+                // 금주 한 일, 향후 할 일인 경우 작업 대상 선택 추가
+                newItem.className = 'list-input-item customer-request-item';
+                const itemIndex = container.children.length + 1;
+                const prefix = containerId === 'this_week_tasks_container' ? 'this_week' : 'next_week';
+                const placeholder = containerId === 'this_week_tasks_container' ? '금주 한 일을 입력하세요...' : '향후 할 일을 입력하세요...';
+                
+                newItem.innerHTML = `
+                    <div class="target-label">(작업 대상)</div>
+                    <div class="target-checkboxes">
+                        <div class="target-checkbox-item">
+                            <input type="checkbox" id="${prefix}_dev_${itemIndex}" name="${prefix}_target_${itemIndex}" value="개발계">
+                            <label for="${prefix}_dev_${itemIndex}">개발계</label>
+                        </div>
+                        <div class="target-checkbox-item">
+                            <input type="checkbox" id="${prefix}_ops_${itemIndex}" name="${prefix}_target_${itemIndex}" value="운영계">
+                            <label for="${prefix}_ops_${itemIndex}">운영계</label>
+                        </div>
+                        <div class="target-checkbox-item">
+                            <input type="checkbox" id="${prefix}_etc_${itemIndex}" name="${prefix}_target_${itemIndex}" value="기타">
+                            <label for="${prefix}_etc_${itemIndex}">기타</label>
+                        </div>
+                    </div>
+                    <input type="text" placeholder="${placeholder}" class="list-input"
                            onkeydown="preventEnterSubmit(event)" onkeypress="preventEnterSubmit(event)">
                     <button type="button" class="remove-btn" onclick="removeListItem(this)">×</button>
                 `;
@@ -1530,11 +1751,16 @@
                 // 첫 번째 항목이면 값만 비우기
                 const textInput = currentItem.querySelector('.list-input');
                 const dateInput = currentItem.querySelector('.date-input');
+                const checkboxes = currentItem.querySelectorAll('input[type="checkbox"]');
                 
                 textInput.value = '';
                 if (dateInput) {
                     dateInput.value = ''; // 날짜도 초기화
                 }
+                // 체크박스도 초기화
+                checkboxes.forEach(checkbox => {
+                    checkbox.checked = false;
+                });
                 textInput.focus(); // 포커스 이동
             }
         }
@@ -1542,11 +1768,32 @@
         // 리스트 데이터를 텍스트로 변환하는 함수 (Sheet용 - 첫 줄 제외하고 ▶ 추가)
         function getListData(containerId) {
             const container = document.getElementById(containerId);
+            
+            // "없음" 체크박스 확인
+            let noneCheckboxId;
+            if (containerId === 'this_week_tasks_container') {
+                noneCheckboxId = 'this_week_none';
+            } else if (containerId === 'next_week_tasks_container') {
+                noneCheckboxId = 'next_week_none';
+            } else if (containerId === 'customer_requests_container') {
+                noneCheckboxId = 'customer_requests_none';
+            }
+            
+            const noneCheckbox = document.getElementById(noneCheckboxId);
+            
+            console.log(`getListData 체크: ${containerId} -> ${noneCheckboxId}, 체크박스 존재: ${!!noneCheckbox}, 체크됨: ${noneCheckbox?.checked}`);
+            
+            if (noneCheckbox && noneCheckbox.checked) {
+                console.log(`"없음" 체크됨: ${containerId} -> ${noneCheckboxId}`);
+                return '없음';
+            }
+            
             const items = container.querySelectorAll('.list-input-item');
             const values = Array.from(items)
                 .map(item => {
                     const textInput = item.querySelector('.list-input');
                     const dateInput = item.querySelector('.date-input');
+                    const checkboxes = item.querySelectorAll('input[type="checkbox"]:checked');
                     
                     if (!textInput || textInput.value.trim() === '') {
                         return null; // 텍스트가 비어있으면 제외
@@ -1563,15 +1810,23 @@
                         return null;
                     }
                     
+                    let finalValue = cleanValue;
+                    
+                    // 작업 대상 선택이 있는 경우 (금주 한 일, 향후 할 일)
+                    if (checkboxes.length > 0 && (containerId === 'this_week_tasks_container' || containerId === 'next_week_tasks_container')) {
+                        const selectedTargets = Array.from(checkboxes).map(cb => cb.value);
+                        finalValue = `[${selectedTargets.join(',')}] ${cleanValue}`;
+                    }
+                    
                     // 고객 요청사항인 경우 날짜 추가
                     if (containerId === 'customer_requests_container' && date) {
                         // 날짜 형식을 YY.MM.DD로 변환
                         const dateObj = new Date(date);
                         const formattedDate = `${dateObj.getFullYear().toString().slice(-2)}.${(dateObj.getMonth() + 1).toString().padStart(2, '0')}.${dateObj.getDate().toString().padStart(2, '0')}`;
-                        return `${cleanValue} (발생일 : ${formattedDate})`;
+                        finalValue = `${cleanValue} (발생일 : ${formattedDate})`;
                     }
                     
-                    return cleanValue;
+                    return finalValue;
                 })
                 .filter(value => value !== null) // null 값 제거
                 .map((value, index) => {
@@ -1601,6 +1856,34 @@
         // 텍스트를 리스트로 설정하는 함수 (▶ 제거하여 표시)
         function setListData(containerId, text) {
             const container = document.getElementById(containerId);
+            
+            // "없음" 체크박스 확인
+            let noneCheckboxId;
+            if (containerId === 'this_week_tasks_container') {
+                noneCheckboxId = 'this_week_none';
+            } else if (containerId === 'next_week_tasks_container') {
+                noneCheckboxId = 'next_week_none';
+            } else if (containerId === 'customer_requests_container') {
+                noneCheckboxId = 'customer_requests_none';
+            }
+            
+            const noneCheckbox = document.getElementById(noneCheckboxId);
+            
+            if (text.trim() === '없음') {
+                // "없음" 데이터인 경우 체크박스 체크하고 섹션 비활성화
+                if (noneCheckbox) {
+                    noneCheckbox.checked = true;
+                    toggleSection(containerId, true);
+                }
+                return;
+            }
+            
+            // "없음"이 아닌 경우 체크박스 해제하고 섹션 활성화
+            if (noneCheckbox) {
+                noneCheckbox.checked = false;
+                toggleSection(containerId, false);
+            }
+            
             const lines = text.split('\n').filter(line => line.trim() !== '');
             
             // 기존 항목들 제거
@@ -1611,6 +1894,16 @@
                 // 모든 ▶ 기호와 공백 제거
                 let cleanLine = line.replace(/^▶\s*/g, '').trim();
                 let dateValue = '';
+                let selectedTargets = [];
+                
+                // 작업 대상 파싱 (금주 한 일, 향후 할 일)
+                if (containerId === 'this_week_tasks_container' || containerId === 'next_week_tasks_container') {
+                    const targetMatch = cleanLine.match(/^\[([^\]]+)\]\s*(.*)$/);
+                    if (targetMatch) {
+                        selectedTargets = targetMatch[1].split(',').map(t => t.trim());
+                        cleanLine = targetMatch[2].trim();
+                    }
+                }
                 
                 // 고객 요청사항인 경우 날짜 파싱
                 if (containerId === 'customer_requests_container') {
@@ -1637,6 +1930,38 @@
                         <div class="date-label">(발생일)</div>
                         <input type="date" class="date-input" value="${dateValue}" title="발생일 선택">
                         <input type="text" value="${cleanLine}" class="list-input"
+                               onkeydown="preventEnterSubmit(event)" onkeypress="preventEnterSubmit(event)">
+                        <button type="button" class="remove-btn" onclick="removeListItem(this)">×</button>
+                    `;
+                } else if (containerId === 'this_week_tasks_container' || containerId === 'next_week_tasks_container') {
+                    // 금주 한 일, 향후 할 일인 경우 작업 대상 선택 추가
+                    newItem.className = 'list-input-item customer-request-item';
+                    const itemIndex = index + 1;
+                    const prefix = containerId === 'this_week_tasks_container' ? 'this_week' : 'next_week';
+                    const placeholder = containerId === 'this_week_tasks_container' ? '금주 한 일을 입력하세요...' : '향후 할 일을 입력하세요...';
+                    
+                    // 선택된 작업 대상에 따라 체크박스 상태 설정
+                    const devChecked = selectedTargets.includes('개발계') ? 'checked' : '';
+                    const opsChecked = selectedTargets.includes('운영계') ? 'checked' : '';
+                    const etcChecked = selectedTargets.includes('기타') ? 'checked' : '';
+                    
+                    newItem.innerHTML = `
+                        <div class="target-label">(작업 대상)</div>
+                        <div class="target-checkboxes">
+                            <div class="target-checkbox-item">
+                                <input type="checkbox" id="${prefix}_dev_${itemIndex}" name="${prefix}_target_${itemIndex}" value="개발계" ${devChecked}>
+                                <label for="${prefix}_dev_${itemIndex}">개발계</label>
+                            </div>
+                            <div class="target-checkbox-item">
+                                <input type="checkbox" id="${prefix}_ops_${itemIndex}" name="${prefix}_target_${itemIndex}" value="운영계" ${opsChecked}>
+                                <label for="${prefix}_ops_${itemIndex}">운영계</label>
+                            </div>
+                            <div class="target-checkbox-item">
+                                <input type="checkbox" id="${prefix}_etc_${itemIndex}" name="${prefix}_target_${itemIndex}" value="기타" ${etcChecked}>
+                                <label for="${prefix}_etc_${itemIndex}">기타</label>
+                            </div>
+                        </div>
+                        <input type="text" value="${cleanLine}" placeholder="${placeholder}" class="list-input"
                                onkeydown="preventEnterSubmit(event)" onkeypress="preventEnterSubmit(event)">
                         <button type="button" class="remove-btn" onclick="removeListItem(this)">×</button>
                     `;

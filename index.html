@@ -100,6 +100,7 @@
         .submit-button-container button {
             margin: 0 auto;
         }
+        
         input[type="text"], textarea, select {
             width: 100%;
             padding: 10px;
@@ -599,6 +600,24 @@
             }
         }
     </style>
+
+    <script>
+        // 환경변수 주입
+        window.ENV_SPREADSHEET_ID = '1fmWVqEOJavKVMGT6IZguBMg1kG8bnPdiO_x_FhuXJ-s';
+        console.log('Environment variables injected:', {
+            SPREADSHEET_ID: '1fmWVqEOJavKVMGT6IZguBMg1kG8bnPdiO_x_FhuXJ-s'
+        });
+    </script>
+
+
+    <script>
+        // 환경변수 주입
+        window.ENV_SPREADSHEET_ID = '1Xrz9RlDXu3v6pBbuQc-B306gtXnG5CfebRG6KP44Kxs';
+        console.log('Environment variables injected:', {
+            SPREADSHEET_ID: '1Xrz9RlDXu3v6pBbuQc-B306gtXnG5CfebRG6KP44Kxs'
+        });
+    </script>
+
 </head>
 <body>
     <div class="container">
@@ -619,6 +638,7 @@
                     <select id="manager" name="manager" required>
                         <option value="">선택하세요</option>
                     </select>
+                    <input type="text" id="managerDirectInput" placeholder="매니저 이름을 입력하세요 (예: 홍길동,이춘향 또는 홍길동 이춘향)" style="display: none; margin-top: 5px;">
                 </div>
                 <div class="form-group">
                     <label for="site_name">담당 사이트:</label>
@@ -755,7 +775,8 @@
                     <div class="step-number">2️⃣</div>
                     <div class="step-content">
                         <strong>정보 선택</strong><br>
-                        매니저 이름, 담당 사이트, 보고서 시트를 선택합니다.
+                        매니저 이름, 담당 사이트, 보고서 시트를 선택합니다.<br>
+                        <em>💡 매니저가 2명 이상인 경우: "직접입력"을 선택하고 "홍길동,이춘향" 또는 "홍길동 이춘향" 형태로 입력하세요.</em>
                     </div>
                 </div>
                 
@@ -798,6 +819,9 @@
         const API_KEY = 'AIzaSyBV_qqUNlgCkRAt7sITJbzxt38I3gZ5Z-4';     // Google Cloud Console에서 발급받은 API 키를 입력하세요.
         const DISCOVERY_DOCS = ["https://sheets.googleapis.com/$discovery/rest?version=v4"];
         const SCOPES = "https://www.googleapis.com/auth/spreadsheets";
+        
+        // 환경변수에서 스프레드시트 ID 가져오기 (기본값: 테스트 스프레드시트)
+        const SPREADSHEET_ID = window.ENV_SPREADSHEET_ID || '1Xrz9RlDXu3v6pBbuQc-B306gtXnG5CfebRG6KP44Kxs';
 
         let tokenClient;
         let gapiInited = false;
@@ -888,38 +912,51 @@
             siteSelect.innerHTML = '<option value="">선택하세요</option>';
             reportSheetNameSelect.innerHTML = '<option value="">선택하세요</option>';
 
-            const SPREADSHEET_ID = '1Xrz9RlDXu3v6pBbuQc-B306gtXnG5CfebRG6KP44Kxs'; // 제공된 스프레드시트 ID
+            // SPREADSHEET_ID는 상단에서 환경변수로 설정됨
             const DROPDOWN_SHEET_NAME = 'SITE 분장 현황'; // 드롭다운 데이터가 있는 시트 이름
-            const DROPDOWN_RANGE = `${DROPDOWN_SHEET_NAME}!A:Z`; // 충분히 넓은 범위로 데이터를 가져옵니다。
+            const MANAGER_RANGE = `${DROPDOWN_SHEET_NAME}!B4:B1000`; // B4부터 시작하여 매니저 이름만 가져오기
+            const SITE_RANGE = `${DROPDOWN_SHEET_NAME}!A:Z`; // 사이트 데이터는 기존대로 전체 범위
 
             try {
                 console.log('Requesting dropdown data from Google Sheets API...');
                 console.log('Spreadsheet ID:', SPREADSHEET_ID);
-                console.log('Range:', DROPDOWN_RANGE);
+                console.log('Manager Range:', MANAGER_RANGE);
+                console.log('Site Range:', SITE_RANGE);
 
-                // 드롭다운 데이터 가져오기
-                const response = await gapi.client.sheets.spreadsheets.values.get({
+                // 매니저 이름 데이터 가져오기 (B4부터)
+                const managerResponse = await gapi.client.sheets.spreadsheets.values.get({
                     spreadsheetId: SPREADSHEET_ID,
-                    range: DROPDOWN_RANGE,
+                    range: MANAGER_RANGE,
                 });
 
-                console.log('Google Sheets API Response (Dropdown Data):', response); // API 응답 출력
+                // 사이트 데이터 가져오기 (기존 방식)
+                const siteResponse = await gapi.client.sheets.spreadsheets.values.get({
+                    spreadsheetId: SPREADSHEET_ID,
+                    range: SITE_RANGE,
+                });
 
-                const sheetData = response.result.values || [];
-                console.log('Extracted sheetData:', sheetData); // 추출된 sheetData 출력
+                console.log('Google Sheets API Response (Manager Data):', managerResponse); // API 응답 출력
+                console.log('Google Sheets API Response (Site Data):', siteResponse); // API 응답 출력
+
+                const managerData = managerResponse.result.values || [];
+                const siteData = siteResponse.result.values || [];
+                console.log('Extracted managerData:', managerData); // 추출된 매니저 데이터 출력
+                console.log('Extracted siteData:', siteData); // 추출된 사이트 데이터 출력
 
                 const managers = new Set();
                 const sites = new Set();
 
-                // '성명' 헤더가 있는 행을 건너뛰고 실제 데이터가 시작하는 행부터 처리
-                for (let r = 0; r < sheetData.length; r++) {
-                    const rowData = sheetData[r] || [];
-                    const managerCell = rowData[1] ? rowData[1].trim() : ''; // Column B (index 1) for manager names
-
-                    if (managerCell && managerCell !== '성명') {
+                // 매니저 이름 처리 (B4부터 시작하므로 헤더 없이 바로 처리)
+                for (let r = 0; r < managerData.length; r++) {
+                    const managerCell = managerData[r] && managerData[r][0] ? managerData[r][0].trim() : '';
+                    if (managerCell && managerCell !== '') {
                         managers.add(managerCell);
                     }
+                }
 
+                // 사이트 데이터 처리 (기존 방식 유지)
+                for (let r = 0; r < siteData.length; r++) {
+                    const rowData = siteData[r] || [];
                     // Sites start from Column E (index 4)
                     for (let c = 4; c < rowData.length; c++) {
                         const siteCell = rowData[c] ? rowData[c].trim() : '';
@@ -1045,7 +1082,7 @@
                 updateConfirmSiteButtonState();
 
                 // Google Sheets 링크 생성 (전체 스프레드시트)
-                const mainSheetUrl = 'https://docs.google.com/spreadsheets/d/1Xrz9RlDXu3v6pBbuQc-B306gtXnG5CfebRG6KP44Kxs/edit';
+                const mainSheetUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/edit`;
                 document.getElementById('response').innerHTML = `
                     매니저/사이트/시트 목록을 성공적으로 불러왔습니다.<br>
                     <a href="${mainSheetUrl}" target="_blank" style="color: #1976d2; text-decoration: underline; margin-top: 10px; display: inline-block;">
@@ -1079,6 +1116,14 @@
             console.log('Updating Manager Dropdown with:', managersList); // 매니저 드롭다운 업데이트 전 목록 출력
             const managerSelect = document.getElementById('manager');
             managerSelect.innerHTML = '<option value="">선택하세요</option>'; // 기존 옵션 제거
+            
+            // 직접입력 옵션을 맨 위에 추가
+            const directInputOption = document.createElement('option');
+            directInputOption.value = '직접입력';
+            directInputOption.textContent = '직접입력';
+            managerSelect.appendChild(directInputOption);
+            
+            // 매니저 목록 추가
             managersList.forEach(manager => {
                 const option = document.createElement('option');
                 option.value = manager;
@@ -1104,9 +1149,36 @@
             filteredSites.forEach(site => {
                 const option = document.createElement('option');
                 option.value = site;
-                option.textContent = site;
+                
+                // 고객 요청사항 입력 불가 사이트인 경우 "(프로젝트)" 접두사 추가
+                if (sitesWithoutCustomerRequests.includes(site)) {
+                    option.textContent = `(프로젝트) ${site}`;
+                } else {
+                    option.textContent = site;
+                }
+                
                 siteSelect.appendChild(option);
             });
+        }
+
+
+        /**
+         * 선택된 매니저 값을 가져옵니다 (드롭다운 또는 직접입력).
+         * @returns {string} 매니저 이름 (여러 명인 경우 줄바꿈으로 구분)
+         */
+        function getManagerValue() {
+            const managerSelect = document.getElementById('manager');
+            const directInput = document.getElementById('managerDirectInput');
+            
+            if (managerSelect.value === '직접입력') {
+                const inputValue = directInput.value.trim();
+                if (inputValue === '') return '';
+                
+                // 콤마나 공백으로 구분된 이름들을 줄바꿈으로 변환
+                return inputValue.split(/[,\s]+/).filter(name => name.trim() !== '').join('\n');
+            } else {
+                return managerSelect.value;
+            }
         }
 
         /**
@@ -1114,11 +1186,11 @@
          */
         function updateConfirmSiteButtonState() {
             const confirmButton = document.getElementById('confirmSiteButton');
-            const managerSelected = document.getElementById('manager').value !== '';
+            const managerValue = getManagerValue();
             const siteSelected = document.getElementById('site_name').value !== '';
             const reportSheetSelected = document.getElementById('reportSheetName').value !== '';
             
-            if (managerSelected && siteSelected && reportSheetSelected) {
+            if (managerValue !== '' && siteSelected && reportSheetSelected) {
                 confirmButton.disabled = false;
                 confirmButton.textContent = '고정/선택';
             } else {
@@ -1185,14 +1257,14 @@
          * "고정/선택" 버튼 클릭 시 호출되는 함수
          */
         function confirmSiteSelection() {
-            const managerSelected = document.getElementById('manager').value;
+            const managerValue = getManagerValue();
             const siteSelected = document.getElementById('site_name').value;
             const reportSheetSelected = document.getElementById('reportSheetName').value;
             const responseDiv = document.getElementById('response');
             const confirmButton = document.getElementById('confirmSiteButton');
             
             // 모든 드롭다운이 선택되었는지 확인
-            if (!managerSelected || !siteSelected || !reportSheetSelected) {
+            if (!managerValue || !siteSelected || !reportSheetSelected) {
                 responseDiv.textContent = '매니저, 담당 사이트, 보고서 시트 이름을 모두 선택해주세요.';
                 responseDiv.style.display = 'block';
                 responseDiv.style.backgroundColor = '#ffebee';
@@ -1217,7 +1289,7 @@
             const selectedReportSheetName = document.getElementById('reportSheetName').value;
             const selectedOption = document.getElementById('reportSheetName').selectedOptions[0];
             const reportSheetId = selectedOption ? selectedOption.dataset.sheetId : '';
-            const sheetUrl = `https://docs.google.com/spreadsheets/d/1Xrz9RlDXu3v6pBbuQc-B306gtXnG5CfebRG6KP44Kxs/edit#gid=${reportSheetId}`;
+            const sheetUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/edit#gid=${reportSheetId}`;
             
             // 성공 메시지 표시
             responseDiv.innerHTML = `
@@ -1281,6 +1353,20 @@
 
         // 매니저 드롭다운 변경 시 보고서 조회 버튼 및 고정/선택 버튼 상태 업데이트
         document.getElementById('manager').addEventListener('change', function() {
+            const directInput = document.getElementById('managerDirectInput');
+            if (this.value === '직접입력') {
+                directInput.style.display = 'block';
+                directInput.focus();
+            } else {
+                directInput.style.display = 'none';
+                directInput.value = '';
+            }
+            updateReadReportButtonState();
+            updateConfirmSiteButtonState();
+        });
+
+        // 직접입력 필드 변경 시 버튼 상태 업데이트
+        document.getElementById('managerDirectInput').addEventListener('input', function() {
             updateReadReportButtonState();
             updateConfirmSiteButtonState();
         });
@@ -1302,12 +1388,12 @@
 
         // "보고서 조회" 버튼의 활성화/비활성화 상태를 업데이트하는 헬퍼 함수
         function updateReadReportButtonState() {
-            const managerSelected = document.getElementById('manager').value !== '';
+            const managerValue = getManagerValue();
             const siteSelected = document.getElementById('site_name').value !== '';
             const reportSheetNameSelected = document.getElementById('reportSheetName').value !== '';
             const readReportButton = document.getElementById('readReportButton');
 
-            if (managerSelected && siteSelected && reportSheetNameSelected) {
+            if (managerValue !== '' && siteSelected && reportSheetNameSelected) {
                 readReportButton.disabled = false;
                 readReportButton.style.backgroundColor = '#4CAF50'; // 원래 색상
             } else {
@@ -1344,7 +1430,7 @@
         async function submitFormData(event) {
             const formData = {
                 site_name: document.getElementById('site_name').value,
-                manager: document.getElementById('manager').value,
+                manager: getManagerValue(), // 직접입력 또는 드롭다운 선택 값
                 this_week_tasks: getListData('this_week_tasks_container'),
                 next_week_tasks: getListData('next_week_tasks_container'),
                 customer_requests: getListData('customer_requests_container')
@@ -1359,7 +1445,7 @@
             responseDiv.textContent = '보고서 제출 중...';
 
             // 보고서 시트 정보 가져오기
-            const SPREADSHEET_ID = '1Xrz9RlDXu3v6pBbuQc-B306gtXnG5CfebRG6KP44Kxs'; // 스프레드시트 ID
+            // SPREADSHEET_ID는 상단에서 환경변수로 설정됨
             const REPORT_SHEET_NAME = document.getElementById('reportSheetName').value;
             const selectedOption = document.getElementById('reportSheetName').selectedOptions[0];
             const REPORT_SHEET_ID = selectedOption ? parseInt(selectedOption.dataset.sheetId) : null;
@@ -1454,7 +1540,7 @@
                 });
 
                 // Google Sheets 링크 생성
-                const sheetUrl = `https://docs.google.com/spreadsheets/d/1Xrz9RlDXu3v6pBbuQc-B306gtXnG5CfebRG6KP44Kxs/edit#gid=${REPORT_SHEET_ID}`;
+                const sheetUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/edit#gid=${REPORT_SHEET_ID}`;
                 responseDiv.innerHTML = `
                     보고서가 성공적으로 제출되었습니다!<br>
                     <a href="${sheetUrl}" target="_blank" style="color: #1976d2; text-decoration: underline; margin-top: 10px; display: inline-block;">
@@ -1490,12 +1576,12 @@
             responseDiv.style.display = 'block';
             responseDiv.textContent = '보고서 데이터 조회 중...';
 
-            const SPREADSHEET_ID = '1Xrz9RlDXu3v6pBbuQc-B306gtXnG5CfebRG6KP44Kxs';
-            const selectedManager = document.getElementById('manager').value;
+            // SPREADSHEET_ID는 상단에서 환경변수로 설정됨
+            const managerValue = getManagerValue();
             const selectedSiteName = document.getElementById('site_name').value;
             const selectedReportSheetName = document.getElementById('reportSheetName').value;
 
-            if (!selectedManager || !selectedSiteName || !selectedReportSheetName) {
+            if (!managerValue || !selectedSiteName || !selectedReportSheetName) {
                 responseDiv.textContent = '매니저, 담당 사이트, 보고서 시트 이름을 모두 선택해주세요.';
                 readReportButton.textContent = '보고서 조회';
                 readReportButton.style.backgroundColor = '#4CAF50';
@@ -1564,7 +1650,7 @@
                 // Google Sheets 링크 생성 (선택된 보고서 시트에 따라)
                 const selectedOption = document.getElementById('reportSheetName').selectedOptions[0];
                 const reportSheetId = selectedOption ? selectedOption.dataset.sheetId : '';
-                const sheetUrl = `https://docs.google.com/spreadsheets/d/1Xrz9RlDXu3v6pBbuQc-B306gtXnG5CfebRG6KP44Kxs/edit#gid=${reportSheetId}`;
+                const sheetUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/edit#gid=${reportSheetId}`;
                 responseDiv.innerHTML = `
                     보고서 데이터를 성공적으로 조회했습니다!<br>
                     <a href="${sheetUrl}" target="_blank" style="color: #1976d2; text-decoration: underline; margin-top: 10px; display: inline-block;">

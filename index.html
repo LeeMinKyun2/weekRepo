@@ -101,6 +101,65 @@
             margin: 0 auto;
         }
         
+        /* 복사/붙여넣기 버튼 스타일 */
+        .copy-btn, .paste-btn {
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            padding: 4px 8px;
+            cursor: pointer;
+            font-size: 11px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 5px;
+            transition: background-color 0.2s ease;
+            white-space: nowrap;
+        }
+        
+        .copy-btn:hover, .paste-btn:hover {
+            background-color: #5a6268;
+        }
+        
+        .copy-btn:active, .paste-btn:active {
+            background-color: #495057;
+        }
+        
+        .copy-btn.copied {
+            background-color: #28a745;
+        }
+        
+        .paste-btn.pasted {
+            background-color: #17a2b8;
+        }
+        
+        .target-checkboxes {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .copy-paste-container {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .date-label {
+            font-size: 12px;
+            color: #666;
+            margin-right: 5px;
+        }
+        
+        .copy-btn-container {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            z-index: 10;
+        }
+        
         input[type="text"], textarea, select {
             width: 100%;
             padding: 10px;
@@ -688,6 +747,10 @@
                                     <input type="checkbox" id="this_week_etc_1" name="this_week_target_1" value="기타">
                                     <label for="this_week_etc_1">기타</label>
                                 </div>
+                                <div class="copy-paste-container">
+                                    <button type="button" class="copy-btn" onclick="copyListData('this_week_tasks_container')" title="금주 한 일 복사">Copy</button>
+                                    <button type="button" class="paste-btn" onclick="pasteListData('this_week_tasks_container')" title="금주 한 일 붙여넣기">Paste</button>
+                                </div>
                             </div>
                             <input type="text" placeholder="금주 한 일을 입력하세요..." class="list-input"
                                    onkeydown="preventEnterSubmit(event)" onkeypress="preventEnterSubmit(event)">
@@ -720,6 +783,10 @@
                                     <input type="checkbox" id="next_week_etc_1" name="next_week_target_1" value="기타">
                                     <label for="next_week_etc_1">기타</label>
                                 </div>
+                                <div class="copy-paste-container">
+                                    <button type="button" class="copy-btn" onclick="copyListData('next_week_tasks_container')" title="향후 할 일 복사">Copy</button>
+                                    <button type="button" class="paste-btn" onclick="pasteListData('next_week_tasks_container')" title="향후 할 일 붙여넣기">Paste</button>
+                                </div>
                             </div>
                             <input type="text" placeholder="향후 할 일을 입력하세요..." class="list-input"
                                    onkeydown="preventEnterSubmit(event)" onkeypress="preventEnterSubmit(event)">
@@ -737,9 +804,22 @@
                         </div>
                     </div>
                     <div class="list-input-container" id="customer_requests_container">
+                        <div class="copy-btn-container">
+                            <div class="copy-paste-container">
+                                <button type="button" class="copy-btn" onclick="copyListData('customer_requests_container')" title="고객 요청사항 복사">Copy</button>
+                                <button type="button" class="paste-btn" onclick="pasteListData('customer_requests_container')" title="고객 요청사항 붙여넣기">Paste</button>
+                            </div>
+                        </div>
                         <div class="list-input-item customer-request-item">
-                            <div class="date-label">(발생일)</div>
-                            <input type="date" class="date-input" title="발생일 선택">
+                            <div class="target-label">(발생일)</div>
+                            <div class="target-checkboxes">
+                                <div class="date-label">(발생일)</div>
+                                <input type="date" class="date-input" title="발생일 선택">
+                                <div class="copy-paste-container">
+                                    <button type="button" class="copy-btn" onclick="copyListItemData(this)" title="이 항목 복사">Copy</button>
+                                    <button type="button" class="paste-btn" onclick="pasteListItemData(this)" title="이 항목에 붙여넣기">Paste</button>
+                                </div>
+                            </div>
                             <input type="text" placeholder="고객 요청사항을 입력하세요..." class="list-input"
                                    onkeydown="preventEnterSubmit(event)" onkeypress="preventEnterSubmit(event)">
                             <button type="button" class="remove-btn" onclick="removeListItem(this)">×</button>
@@ -1747,6 +1827,190 @@
             navInfo.textContent = message;
         }
 
+        // 리스트 데이터 복사 함수
+        async function copyListData(containerId) {
+            try {
+                const listData = getListData(containerId);
+                
+                if (!listData || listData.trim() === '') {
+                    alert('복사할 내용이 없습니다.');
+                    return;
+                }
+                
+                await navigator.clipboard.writeText(listData);
+                
+                // 복사 버튼 시각적 피드백
+                const copyBtn = document.querySelector(`#${containerId} .copy-btn`);
+                const originalText = copyBtn.innerHTML;
+                const originalClass = copyBtn.className;
+                
+                copyBtn.innerHTML = '✓';
+                copyBtn.className = 'copy-btn copied';
+                
+                // 2초 후 원래 상태로 복원
+                setTimeout(() => {
+                    copyBtn.innerHTML = originalText;
+                    copyBtn.className = originalClass;
+                }, 2000);
+                
+                console.log('복사된 내용:', listData);
+                
+            } catch (err) {
+                console.error('복사 실패:', err);
+                alert('복사에 실패했습니다. 브라우저가 클립보드 접근을 지원하지 않을 수 있습니다.');
+            }
+        }
+
+        // 리스트 데이터 붙여넣기 함수
+        async function pasteListData(containerId) {
+            try {
+                const pasteBtn = document.querySelector(`#${containerId} .paste-btn`);
+                
+                // 클립보드 읽기 시도
+                let clipboardText = '';
+                try {
+                    clipboardText = await navigator.clipboard.readText();
+                } catch (clipboardErr) {
+                    console.warn('클립보드 읽기 실패, 사용자 입력 방식으로 전환:', clipboardErr);
+                    
+                    // Fallback: 사용자에게 직접 입력 요청
+                    const userInput = prompt('붙여넣기할 내용을 입력하세요 (Ctrl+V로 붙여넣기 가능):');
+                    if (userInput === null) {
+                        return; // 사용자가 취소한 경우
+                    }
+                    clipboardText = userInput;
+                }
+                
+                if (!clipboardText || clipboardText.trim() === '') {
+                    alert('붙여넣기할 내용이 없습니다.');
+                    return;
+                }
+                
+                // 클립보드 내용을 리스트로 파싱하여 설정
+                setListData(containerId, clipboardText);
+                
+                // 붙여넣기 버튼 시각적 피드백
+                const originalText = pasteBtn.innerHTML;
+                const originalClass = pasteBtn.className;
+                
+                pasteBtn.innerHTML = '✓';
+                pasteBtn.className = 'paste-btn pasted';
+                
+                // 2초 후 원래 상태로 복원
+                setTimeout(() => {
+                    pasteBtn.innerHTML = originalText;
+                    pasteBtn.className = originalClass;
+                }, 2000);
+                
+                console.log('붙여넣기된 내용:', clipboardText);
+                
+            } catch (err) {
+                console.error('붙여넣기 실패:', err);
+                alert('붙여넣기에 실패했습니다. 다시 시도해주세요.');
+            }
+        }
+
+        // 개별 리스트 항목 복사 함수
+        async function copyListItemData(button) {
+            try {
+                const listItem = button.closest('.list-input-item');
+                const input = listItem.querySelector('.list-input');
+                const dateInput = listItem.querySelector('.date-input');
+                
+                let itemData = input.value.trim();
+                
+                // 고객 요청사항인 경우 날짜 정보 추가
+                if (dateInput && dateInput.value) {
+                    const date = new Date(dateInput.value);
+                    const formattedDate = `${date.getFullYear().toString().slice(-2)}.${(date.getMonth() + 1).toString().padStart(2, '0')}.${date.getDate().toString().padStart(2, '0')}`;
+                    itemData = `(발생일 : ${formattedDate}) ${itemData}`;
+                }
+                
+                // 작업 대상 체크박스 정보는 복사 시 제외 (사용자 요청에 따라)
+                // const checkboxes = listItem.querySelectorAll('input[type="checkbox"]:checked');
+                // if (checkboxes.length > 0) {
+                //     const targets = Array.from(checkboxes).map(cb => cb.value).join(',');
+                //     itemData = `[${targets}] ${itemData}`;
+                // }
+                
+                if (!itemData) {
+                    alert('복사할 내용이 없습니다.');
+                    return;
+                }
+                
+                await navigator.clipboard.writeText(itemData);
+                
+                // 복사 버튼 시각적 피드백
+                const originalText = button.innerHTML;
+                const originalClass = button.className;
+                
+                button.innerHTML = '✓';
+                button.className = 'copy-btn copied';
+                
+                // 2초 후 원래 상태로 복원
+                setTimeout(() => {
+                    button.innerHTML = originalText;
+                    button.className = originalClass;
+                }, 2000);
+                
+                console.log('복사된 항목 내용:', itemData);
+                
+            } catch (err) {
+                console.error('항목 복사 실패:', err);
+                alert('복사에 실패했습니다. 브라우저가 클립보드 접근을 지원하지 않을 수 있습니다.');
+            }
+        }
+
+        // 개별 리스트 항목 붙여넣기 함수
+        async function pasteListItemData(button) {
+            try {
+                const listItem = button.closest('.list-input-item');
+                const input = listItem.querySelector('.list-input');
+                
+                // 클립보드 읽기 시도
+                let clipboardText = '';
+                try {
+                    clipboardText = await navigator.clipboard.readText();
+                } catch (clipboardErr) {
+                    console.warn('클립보드 읽기 실패, 사용자 입력 방식으로 전환:', clipboardErr);
+                    
+                    // Fallback: 사용자에게 직접 입력 요청
+                    const userInput = prompt('붙여넣기할 내용을 입력하세요 (Ctrl+V로 붙여넣기 가능):');
+                    if (userInput === null) {
+                        return; // 사용자가 취소한 경우
+                    }
+                    clipboardText = userInput;
+                }
+                
+                if (!clipboardText || clipboardText.trim() === '') {
+                    alert('붙여넣기할 내용이 없습니다.');
+                    return;
+                }
+                
+                // 클립보드 내용을 입력창에 설정
+                input.value = clipboardText.trim();
+                
+                // 붙여넣기 버튼 시각적 피드백
+                const originalText = button.innerHTML;
+                const originalClass = button.className;
+                
+                button.innerHTML = '✓';
+                button.className = 'paste-btn pasted';
+                
+                // 2초 후 원래 상태로 복원
+                setTimeout(() => {
+                    button.innerHTML = originalText;
+                    button.className = originalClass;
+                }, 2000);
+                
+                console.log('붙여넣기된 항목 내용:', clipboardText);
+                
+            } catch (err) {
+                console.error('항목 붙여넣기 실패:', err);
+                alert('붙여넣기에 실패했습니다. 다시 시도해주세요.');
+            }
+        }
+
         // 섹션 활성화/비활성화 함수
         function toggleSection(containerId, isChecked) {
             const container = document.getElementById(containerId);
@@ -1780,9 +2044,17 @@
             // 고객 요청사항인 경우 날짜 입력 칸 추가
             if (containerId === 'customer_requests_container') {
                 newItem.className = 'list-input-item customer-request-item';
+                const itemIndex = container.children.length + 1;
                 newItem.innerHTML = `
-                    <div class="date-label">(발생일)</div>
-                    <input type="date" class="date-input" title="발생일 선택">
+                    <div class="target-label">(발생일)</div>
+                    <div class="target-checkboxes">
+                        <div class="date-label">(발생일)</div>
+                        <input type="date" class="date-input" title="발생일 선택">
+                        <div class="copy-paste-container">
+                            <button type="button" class="copy-btn" onclick="copyListItemData(this)" title="이 항목 복사">Copy</button>
+                            <button type="button" class="paste-btn" onclick="pasteListItemData(this)" title="이 항목에 붙여넣기">Paste</button>
+                        </div>
+                    </div>
                     <input type="text" placeholder="고객 요청사항을 입력하세요..." class="list-input"
                            onkeydown="preventEnterSubmit(event)" onkeypress="preventEnterSubmit(event)">
                     <button type="button" class="remove-btn" onclick="removeListItem(this)">×</button>
@@ -1808,6 +2080,10 @@
                         <div class="target-checkbox-item">
                             <input type="checkbox" id="${prefix}_etc_${itemIndex}" name="${prefix}_target_${itemIndex}" value="기타">
                             <label for="${prefix}_etc_${itemIndex}">기타</label>
+                        </div>
+                        <div class="copy-paste-container">
+                            <button type="button" class="copy-btn" onclick="copyListItemData(this)" title="이 항목 복사">Copy</button>
+                            <button type="button" class="paste-btn" onclick="pasteListItemData(this)" title="이 항목에 붙여넣기">Paste</button>
                         </div>
                     </div>
                     <input type="text" placeholder="${placeholder}" class="list-input"
@@ -2013,8 +2289,15 @@
                 if (containerId === 'customer_requests_container') {
                     newItem.className = 'list-input-item customer-request-item';
                     newItem.innerHTML = `
-                        <div class="date-label">(발생일)</div>
-                        <input type="date" class="date-input" value="${dateValue}" title="발생일 선택">
+                        <div class="target-label">(발생일)</div>
+                        <div class="target-checkboxes">
+                            <div class="date-label">(발생일)</div>
+                            <input type="date" class="date-input" value="${dateValue}" title="발생일 선택">
+                            <div class="copy-paste-container">
+                                <button type="button" class="copy-btn" onclick="copyListItemData(this)" title="이 항목 복사">Copy</button>
+                                <button type="button" class="paste-btn" onclick="pasteListItemData(this)" title="이 항목에 붙여넣기">Paste</button>
+                            </div>
+                        </div>
                         <input type="text" value="${cleanLine}" class="list-input"
                                onkeydown="preventEnterSubmit(event)" onkeypress="preventEnterSubmit(event)">
                         <button type="button" class="remove-btn" onclick="removeListItem(this)">×</button>
@@ -2045,6 +2328,10 @@
                             <div class="target-checkbox-item">
                                 <input type="checkbox" id="${prefix}_etc_${itemIndex}" name="${prefix}_target_${itemIndex}" value="기타" ${etcChecked}>
                                 <label for="${prefix}_etc_${itemIndex}">기타</label>
+                            </div>
+                            <div class="copy-paste-container">
+                                <button type="button" class="copy-btn" onclick="copyListItemData(this)" title="이 항목 복사">Copy</button>
+                                <button type="button" class="paste-btn" onclick="pasteListItemData(this)" title="이 항목에 붙여넣기">Paste</button>
                             </div>
                         </div>
                         <input type="text" value="${cleanLine}" placeholder="${placeholder}" class="list-input"

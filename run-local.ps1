@@ -26,3 +26,4 @@ Write-Host "브라우저에서 http://localhost:$Port 접속" -ForegroundColor C
 Write-Host ""
 
 npx live-server --port=$Port
+

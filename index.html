@@ -711,6 +711,9 @@
                     <select id="reportSheetName" name="reportSheetName" required>
                         <option value="">선택하세요</option>
                     </select>
+                    <div id="weeklySheetInfo" style="margin-top: 8px; padding: 8px; background-color: #e3f2fd; border: 1px solid #2196f3; border-radius: 4px; font-size: 14px; color: #1976d2; display: none;">
+                        <strong>📅 이번 주 작성 시트: </strong><span id="currentWeekSheet"></span>
+                    </div>
                 </div>
                 <div class="form-group query-button-container">
                     <button type="button" id="queryDropdownsButton" disabled>매니저/사이트 목록 조회</button>
@@ -1074,6 +1077,9 @@
                 // 보고서 시트 이름 가져오기 및 채우기
                 console.log('Original Report Sheet Names with IDs:', originalReportSheetNames); // 원본 시트 이름 목록과 ID 출력
                 updateReportSheetNameDropdown(originalReportSheetNames);
+                
+                // 이번 주 작성 시트 정보 표시
+                updateWeeklySheetInfo();
 
                 // --- 이제 가장 최신 YYYY-MM-DD 시트에서 SITE명 가져오기 ---
                 if (originalReportSheetNames.length > 0) {
@@ -1411,6 +1417,67 @@
                 option.dataset.sheetId = sheet.id; // sheetId를 data-sheet-id 속성으로 저장
                 reportSheetNameSelect.appendChild(option);
             });
+        }
+
+        /**
+         * 이번 주 작성 시트를 계산하고 표시합니다.
+         * 목요일 기준으로 이번 주 시트를 계산합니다.
+         */
+        function updateWeeklySheetInfo() {
+            const today = new Date();
+            const currentDay = today.getDay(); // 0=일요일, 1=월요일, ..., 4=목요일, ..., 6=토요일
+            
+            // 목요일까지의 일수 계산 (목요일이 4)
+            let daysToThursday = 4 - currentDay;
+            if (daysToThursday < 0) {
+                daysToThursday += 7; // 다음 주 목요일
+            }
+            
+            // 이번 주 목요일 날짜 계산
+            const thisWeekThursday = new Date(today);
+            thisWeekThursday.setDate(today.getDate() + daysToThursday);
+            
+            // YYYY-MM-DD 형식으로 포맷
+            const year = thisWeekThursday.getFullYear();
+            const month = String(thisWeekThursday.getMonth() + 1).padStart(2, '0');
+            const day = String(thisWeekThursday.getDate()).padStart(2, '0');
+            const thisWeekSheetName = `${year}-${month}-${day}`;
+            
+            // UI에 표시
+            const weeklySheetInfo = document.getElementById('weeklySheetInfo');
+            const currentWeekSheet = document.getElementById('currentWeekSheet');
+            
+            if (weeklySheetInfo && currentWeekSheet) {
+                currentWeekSheet.textContent = thisWeekSheetName;
+                weeklySheetInfo.style.display = 'block';
+                
+                // 해당 시트가 드롭다운에 있는지 확인하고 강조 표시
+                const reportSheetSelect = document.getElementById('reportSheetName');
+                const options = reportSheetSelect.querySelectorAll('option');
+                let found = false;
+                
+                options.forEach(option => {
+                    if (option.value === thisWeekSheetName) {
+                        option.style.backgroundColor = '#e3f2fd';
+                        option.style.fontWeight = 'bold';
+                        found = true;
+                    }
+                });
+                
+                if (!found) {
+                    // 시트가 없으면 경고 표시
+                    weeklySheetInfo.style.backgroundColor = '#fff3cd';
+                    weeklySheetInfo.style.borderColor = '#ffc107';
+                    weeklySheetInfo.style.color = '#856404';
+                    currentWeekSheet.innerHTML = `${thisWeekSheetName} <span style="color: #dc3545;">(시트 없음)</span>`;
+                } else {
+                    // 시트가 있으면 정상 표시
+                    weeklySheetInfo.style.backgroundColor = '#e3f2fd';
+                    weeklySheetInfo.style.borderColor = '#2196f3';
+                    weeklySheetInfo.style.color = '#1976d2';
+                    currentWeekSheet.textContent = thisWeekSheetName;
+                }
+            }
         }
 
         // 매니저 검색 필드 이벤트 리스너

@@ -31,3 +31,4 @@ htmlContent = htmlContent.replace('</head>', `${envScript}\n</head>`);
 fs.writeFileSync(htmlPath, htmlContent);
 
 console.log(`Environment variables injected into HTML: SPREADSHEET_ID=${spreadsheetId}`);
+

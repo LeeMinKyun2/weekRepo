@@ -7,6 +7,11 @@ RUN apk add --no-cache nodejs npm
 # 기본 nginx 설정 파일을 제거
 RUN rm /etc/nginx/conf.d/default.conf
 
+# nginx 로그 디렉토리 생성 및 권한 설정
+RUN mkdir -p /var/log/nginx && \
+    chown -R nginx:nginx /var/log/nginx && \
+    chmod -R 755 /var/log/nginx
+
 # 커스텀 nginx 설정 파일 복사
 COPY nginx.conf /etc/nginx/conf.d/
 

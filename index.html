@@ -721,6 +721,7 @@
                 <div class="form-group button-group">
                     <button type="button" id="confirmSiteButton" disabled>고정/선택</button>
                     <button type="button" id="readReportButton" disabled>보고서 조회</button>
+                    <button type="button" id="readLastWeekReportButton" disabled>지난 주 보고서 조회</button>
                 </div>
             </div>
                         <!-- 입력 섹션 -->
@@ -1489,6 +1490,7 @@
             console.log('Filtered Managers (searchManager keyup):', filteredManagers); // 매니저 검색 필터링 결과 출력
             updateManagerDropdown(filteredManagers);
             updateReadReportButtonState(); // 매니저 변경 시 보고서 조회 버튼 상태 업데이트
+            updateLastWeekReportButtonState(); // 매니저 변경 시 지난 주 보고서 조회 버튼 상태 업데이트
         });
 
         // 사이트 검색 필드 이벤트 리스너
@@ -1496,6 +1498,7 @@
             const searchTerm = this.value.toLowerCase();
             updateSiteDropdown(originalSites, searchTerm); // 매니저 필터링 없이 전체 사이트에서 검색
             updateReadReportButtonState(); // 사이트 변경 시 보고서 조회 버튼 상태 업데이트
+            updateLastWeekReportButtonState(); // 사이트 변경 시 지난 주 보고서 조회 버튼 상태 업데이트
         });
 
         // 매니저 드롭다운 변경 시 보고서 조회 버튼 및 고정/선택 버튼 상태 업데이트
@@ -1509,24 +1512,28 @@
                 directInput.value = '';
             }
             updateReadReportButtonState();
+            updateLastWeekReportButtonState();
             updateConfirmSiteButtonState();
         });
 
         // 직접입력 필드 변경 시 버튼 상태 업데이트
         document.getElementById('managerDirectInput').addEventListener('input', function() {
             updateReadReportButtonState();
+            updateLastWeekReportButtonState();
             updateConfirmSiteButtonState();
         });
 
         // 사이트 드롭다운 변경 시 보고서 조회 버튼 상태만 업데이트
         document.getElementById('site_name').addEventListener('change', function() {
             updateReadReportButtonState();
+            updateLastWeekReportButtonState();
             updateConfirmSiteButtonState();
         });
 
         // 보고서 시트 이름 드롭다운 변경 시 보고서 조회 버튼 상태 업데이트
         document.getElementById('reportSheetName').addEventListener('change', function() {
             updateReadReportButtonState();
+            updateLastWeekReportButtonState();
             updateConfirmSiteButtonState();
         });
 
@@ -1546,6 +1553,44 @@
             } else {
                 readReportButton.disabled = true;
                 readReportButton.style.backgroundColor = '#cccccc'; // 비활성화 색상
+            }
+        }
+
+        // "지난 주 보고서 조회" 버튼의 활성화/비활성화 상태를 업데이트하는 헬퍼 함수
+        function updateLastWeekReportButtonState() {
+            const managerValue = getManagerValue();
+            const siteSelected = document.getElementById('site_name').value !== '';
+            const reportSheetNameSelected = document.getElementById('reportSheetName').value !== '';
+            const lastWeekReportButton = document.getElementById('readLastWeekReportButton');
+
+            if (managerValue !== '' && siteSelected && reportSheetNameSelected) {
+                lastWeekReportButton.disabled = false;
+                lastWeekReportButton.style.backgroundColor = '#9C27B0'; // 보라색 (지난 주 보고서 조회)
+            } else {
+                lastWeekReportButton.disabled = true;
+                lastWeekReportButton.style.backgroundColor = '#cccccc'; // 비활성화 색상
+            }
+        }
+
+        // 1주일 이전 날짜를 계산하는 함수 (YYYY-MM-DD 형식)
+        function getLastWeekDate(currentDateStr) {
+            try {
+                // 현재 날짜 문자열을 Date 객체로 변환
+                const currentDate = new Date(currentDateStr);
+                
+                // 1주일(7일) 이전 날짜 계산
+                const lastWeekDate = new Date(currentDate);
+                lastWeekDate.setDate(currentDate.getDate() - 7);
+                
+                // YYYY-MM-DD 형식으로 반환
+                const year = lastWeekDate.getFullYear();
+                const month = String(lastWeekDate.getMonth() + 1).padStart(2, '0');
+                const day = String(lastWeekDate.getDate()).padStart(2, '0');
+                
+                return `${year}-${month}-${day}`;
+            } catch (error) {
+                console.error('날짜 계산 오류:', error);
+                return null;
             }
         }
 
@@ -1827,8 +1872,136 @@
 
         document.getElementById('queryDropdownsButton').addEventListener('click', populateDropdowns);
 
+        // 지난 주 보고서 조회 함수
+        async function readLastWeekReportData() {
+            console.log('readLastWeekReportData function called.');
+            const lastWeekReportButton = document.getElementById('readLastWeekReportButton');
+            const responseDiv = document.getElementById('response');
+
+            // 버튼 상태를 로딩 중으로 변경
+            lastWeekReportButton.textContent = '로딩 중...';
+            lastWeekReportButton.style.backgroundColor = '#ffc107'; // 로딩 중 색상 (예: 주황색)
+            lastWeekReportButton.disabled = true;
+            responseDiv.style.display = 'block';
+            responseDiv.textContent = '지난 주 보고서 데이터 조회 중...';
+
+            // SPREADSHEET_ID는 상단에서 환경변수로 설정됨
+            const managerValue = getManagerValue();
+            const selectedSiteName = document.getElementById('site_name').value;
+            const selectedReportSheetName = document.getElementById('reportSheetName').value;
+
+            if (!managerValue || !selectedSiteName || !selectedReportSheetName) {
+                responseDiv.textContent = '매니저, 담당 사이트, 보고서 시트 이름을 모두 선택해주세요.';
+                lastWeekReportButton.textContent = '지난 주 보고서 조회';
+                lastWeekReportButton.style.backgroundColor = '#9C27B0';
+                lastWeekReportButton.disabled = false;
+                return;
+            }
+
+            // 1주일 이전 시트 이름 계산
+            const lastWeekSheetName = getLastWeekDate(selectedReportSheetName);
+            if (!lastWeekSheetName) {
+                responseDiv.textContent = '지난 주 시트 이름을 계산할 수 없습니다.';
+                lastWeekReportButton.textContent = '지난 주 보고서 조회';
+                lastWeekReportButton.style.backgroundColor = '#dc3545';
+                lastWeekReportButton.disabled = false;
+                return;
+            }
+
+            // 스프레드시트의 열 순서를 정의합니다. (데이터 쓰기와 동일)
+            const COLUMN_ORDER = ['SITE명', '담당자', '금주 한 일'];
+
+            try {
+                // 지난 주 시트의 전체 데이터 가져오기 (site_name 위치 찾기 위함)
+                const response = await gapi.client.sheets.spreadsheets.values.get({
+                    spreadsheetId: SPREADSHEET_ID,
+                    range: `${lastWeekSheetName}!A:Z`,
+                });
+                const sheetData = response.result.values || [];
+
+                // site_name 위치 찾기
+                const { row, col } = findCellCoordinates(sheetData, selectedSiteName, lastWeekSheetName, COLUMN_ORDER);
+
+                if (row === -1 || col === -1) {
+                    throw new Error(`담당 사이트 '${selectedSiteName}'를 지난 주 시트 '${lastWeekSheetName}'에서 찾을 수 없습니다.`);
+                }
+
+                // 읽어올 셀 범위 계산 (쓰기 위치와 동일하게)
+                let thisWeekTasksRelativeOffset = COLUMN_ORDER.indexOf('금주 한 일');
+                thisWeekTasksRelativeOffset += 1; // O열로 이동하기 위해 1 추가
+
+                // 예외 사이트에 따라 읽어올 범위 결정
+                const rangesToRead = [
+                    `'${lastWeekSheetName}'!${columnToLetter(col + thisWeekTasksRelativeOffset)}${row + 1}`, // 금주 한 일
+                    `'${lastWeekSheetName}'!${columnToLetter(col + thisWeekTasksRelativeOffset)}${row + 2}`  // 차주 할 일
+                ];
+                
+                // 예외 사이트가 아닌 경우에만 고객 요청사항 범위 추가
+                if (!sitesWithoutCustomerRequests.includes(selectedSiteName)) {
+                    rangesToRead.push(`'${lastWeekSheetName}'!${columnToLetter(col + thisWeekTasksRelativeOffset)}${row + 3}`); // 고객 요청사항
+                }
+
+                console.log('Reading last week data from ranges:', rangesToRead);
+
+                const readResponse = await gapi.client.sheets.spreadsheets.values.batchGet({
+                    spreadsheetId: SPREADSHEET_ID,
+                    ranges: rangesToRead,
+                });
+                console.log('Read Last Week API Response:', readResponse);
+
+                const values = readResponse.result.valueRanges || [];
+
+                // 리스트 필드에 데이터 출력 (▶는 setListData에서 자동 제거됨)
+                const thisWeekTasks = (values[0] && values[0].values && values[0].values[0]) ? values[0].values[0][0] : '';
+                const nextWeekTasks = (values[1] && values[1].values && values[1].values[0]) ? values[1].values[0][0] : '';
+                setListData('this_week_tasks_container', thisWeekTasks);
+                setListData('next_week_tasks_container', nextWeekTasks);
+                
+                // 예외 사이트가 아닌 경우에만 고객 요청사항 읽기
+                if (!sitesWithoutCustomerRequests.includes(selectedSiteName)) {
+                    // 예외 사이트가 아닌 경우 values[2]가 고객 요청사항
+                    const customerRequests = (values[2] && values[2].values && values[2].values[0]) ? values[2].values[0][0] : '';
+                    setListData('customer_requests_container', customerRequests);
+                } else {
+                    setListData('customer_requests_container', ''); // 예외 사이트는 빈 값으로 설정
+                }
+
+                // Google Sheets 링크 생성 (지난 주 보고서 시트에 따라)
+                const selectedOption = document.getElementById('reportSheetName').selectedOptions[0];
+                const reportSheetId = selectedOption ? selectedOption.dataset.sheetId : '';
+                const sheetUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/edit#gid=${reportSheetId}`;
+                responseDiv.innerHTML = `
+                    지난 주 보고서 데이터를 성공적으로 조회했습니다! (${lastWeekSheetName})<br>
+                    <a href="${sheetUrl}" target="_blank" style="color: #1976d2; text-decoration: underline; margin-top: 10px; display: inline-block;">
+                        📊 Google Sheets에서 확인하기
+                    </a>
+                `;
+                lastWeekReportButton.textContent = '조회 완료';
+                lastWeekReportButton.style.backgroundColor = '#6c757d';
+                // 조회 완료 후에도 다시 조회할 수 있도록 활성화 상태 유지
+                lastWeekReportButton.disabled = false; 
+
+                // 3초 뒤 버튼 상태 초기화
+                setTimeout(() => {
+                    lastWeekReportButton.textContent = '지난 주 보고서 조회';
+                    lastWeekReportButton.style.backgroundColor = '#9C27B0'; // 보라색 (지난 주 보고서 조회)
+                    lastWeekReportButton.disabled = false;
+                }, 3000); // 3초 (3000ms)
+
+            } catch (err) {
+                console.error('Error reading last week report data:', err);
+                responseDiv.textContent = '지난 주 보고서 데이터 조회 중 오류가 발생했습니다: ' + (err.result?.error?.message || err.message || JSON.stringify(err));
+                lastWeekReportButton.textContent = '지난 주 보고서 조회';
+                lastWeekReportButton.style.backgroundColor = '#dc3545'; // 오류 시 빨간색
+                lastWeekReportButton.disabled = false;
+            }
+        }
+
         // 보고서 조회 버튼 이벤트 리스너
         document.getElementById('readReportButton').addEventListener('click', readReportData);
+
+        // 지난 주 보고서 조회 버튼 이벤트 리스너
+        document.getElementById('readLastWeekReportButton').addEventListener('click', readLastWeekReportData);
 
         // 사용법 팝업 이벤트 리스너
         const helpButton = document.getElementById('helpButton');

@@ -100,6 +100,27 @@
         .submit-button-container button {
             margin: 0 auto;
         }
+
+        /* 라벨과 체크박스를 같은 라인에 배치 */
+        .label-with-checkbox {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+
+        .simple-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .simple-checkbox label {
+            font-weight: normal;
+            margin: 0;
+            cursor: pointer;
+            font-size: 14px;
+        }
         
         /* 복사/붙여넣기 버튼 스타일 */
         .copy-btn, .paste-btn {
@@ -153,12 +174,6 @@
             margin-right: 5px;
         }
         
-        .copy-btn-container {
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            z-index: 10;
-        }
         
         input[type="text"], textarea, select {
             width: 100%;
@@ -393,30 +408,19 @@
         /* 헤더 섹션 스타일 */
         .header-section {
             display: flex;
-            justify-content: space-between;
+            justify-content: center;
             align-items: center;
             margin-bottom: 20px;
+            position: relative;
         }
         
-        .header-buttons {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .navigation-info {
-            background-color: #e3f2fd;
-            color: #1976d2;
-            padding: 8px 12px;
-            border-radius: 4px;
-            font-size: 13px;
-            font-weight: 500;
-            border-left: 3px solid #2196F3;
-            max-width: 200px;
-            text-align: center;
+        .header-section h1 {
+            margin: 0;
         }
         
         .help-button {
+            position: absolute;
+            right: 0;
             background-color: #2196F3;
             color: white;
             border: none;
@@ -551,22 +555,13 @@
         @media (max-width: 768px) {
             .header-section {
                 flex-direction: column;
-                align-items: stretch;
-            }
-            
-            .header-buttons {
-                flex-direction: column;
-                gap: 8px;
-                margin-top: 10px;
-            }
-            
-            .navigation-info {
-                max-width: none;
-                font-size: 12px;
+                align-items: center;
+                gap: 10px;
             }
             
             .help-button {
-                align-self: flex-end;
+                position: static;
+                margin-top: 10px;
             }
             
             .modal-content {
@@ -682,10 +677,7 @@
     <div class="container">
         <div class="header-section">
             <h1>주간 업무 보고 입력</h1>
-            <div class="header-buttons">
-                <div id="navigationInfo" class="navigation-info">매니저/사이트 목록을 조회하세요</div>
-                <button id="helpButton" class="help-button">📖 사용법</button>
-            </div>
+            <button id="helpButton" class="help-button">📖 사용법</button>
         </div>
         <form id="reportForm">
             <!-- 선택 섹션 -->
@@ -693,15 +685,19 @@
                 <h3>📋 기본 정보 선택</h3>
                 <div class="form-group">
                     <label for="manager">매니저 이름:</label>
-                    <input type="text" id="searchManager" placeholder="매니저 이름 검색...">
                     <select id="manager" name="manager" required>
                         <option value="">선택하세요</option>
                     </select>
                     <input type="text" id="managerDirectInput" placeholder="매니저 이름을 입력하세요 (예: 홍길동,이춘향 또는 홍길동 이춘향)" style="display: none; margin-top: 5px;">
                 </div>
                 <div class="form-group">
-                    <label for="site_name">담당 사이트:</label>
-                    <input type="text" id="searchSite" placeholder="담당 사이트 검색...">
+                    <div class="label-with-checkbox">
+                        <label for="site_name">담당 사이트:</label>
+                        <div class="simple-checkbox">
+                            <input type="checkbox" id="showMySitesOnly" checked>
+                            <label for="showMySitesOnly">내 담당 사이트만</label>
+                        </div>
+                    </div>
                     <select id="site_name" name="site_name" required>
                         <option value="">선택하세요</option>
                     </select>
@@ -808,12 +804,6 @@
                         </div>
                     </div>
                     <div class="list-input-container" id="customer_requests_container">
-                        <div class="copy-btn-container">
-                            <div class="copy-paste-container">
-                                <button type="button" class="copy-btn" onclick="copyListData('customer_requests_container')" title="고객 요청사항 복사">Copy</button>
-                                <button type="button" class="paste-btn" onclick="pasteListData('customer_requests_container')" title="고객 요청사항 붙여넣기">Paste</button>
-                            </div>
-                        </div>
                         <div class="list-input-item customer-request-item">
                             <div class="target-label">(발생일)</div>
                             <div class="target-checkboxes">
@@ -919,6 +909,25 @@
         
         // L40 이후 범위의 사이트들 (고객 요청사항 입력 불가) - 동적으로 생성됨
         let sitesWithoutCustomerRequests = [];
+        
+        // 매니저-사이트 매핑 데이터
+        let managerSiteMapping = {};
+        
+        // 보고서 시트 필터링 관련 변수
+        let showAllSheets = false;
+
+        // 매니저-사이트 매핑 데이터 로드
+        async function loadManagerSiteMapping() {
+            try {
+                const response = await fetch('./manager_site_mapping.json');
+                const data = await response.json();
+                managerSiteMapping = data.managerSiteMapping;
+                console.log('Manager-Site mapping loaded:', managerSiteMapping);
+            } catch (error) {
+                console.error('Error loading manager-site mapping:', error);
+                managerSiteMapping = {};
+            }
+        }
 
         function gapiLoaded() {
             gapi.load('client', initializeGapiClient);
@@ -1077,6 +1086,7 @@
 
                 // 보고서 시트 이름 가져오기 및 채우기
                 console.log('Original Report Sheet Names with IDs:', originalReportSheetNames); // 원본 시트 이름 목록과 ID 출력
+                showAllSheets = false; // 초기화 시에는 제한된 목록만 표시
                 updateReportSheetNameDropdown(originalReportSheetNames);
                 
                 // 이번 주 작성 시트 정보 표시
@@ -1160,7 +1170,7 @@
                 }
 
                 // 사이트 드롭다운 채우기
-                updateSiteDropdown(originalSites, document.getElementById('searchSite').value);
+                updateSiteDropdown(originalSites);
                 
                 // 초기 상태에서 고객 요청사항 필드 상태 설정
                 toggleCustomerRequestsField('');
@@ -1177,8 +1187,6 @@
                     </a>
                 `;
                 
-                // 네비게이션 정보 업데이트
-                updateNavigationInfo('매니저, 사이트, 보고서를 선택한 후 고정/선택을 누르세요');
                 document.getElementById('response').style.display = 'block';
 
                 // 드롭다운 조회 버튼 숨김 처리
@@ -1222,16 +1230,30 @@
         /**
          * 사이트 드롭다운을 업데이트합니다.
          * @param {Array<string>} sitesList 표시할 사이트 목록
-         * @param {string} searchTerm 사이트 검색어 (현재는 사용하지 않음)
          */
-        function updateSiteDropdown(sitesList, searchTerm = '') {
-            console.log('Updating Site Dropdown with:', sitesList, 'Search Term:', searchTerm); // 사이트 드롭다운 업데이트 전 목록 출력
+        function updateSiteDropdown(sitesList) {
+            console.log('Updating Site Dropdown with:', sitesList); // 사이트 드롭다운 업데이트 전 목록 출력
             const siteSelect = document.getElementById('site_name');
             siteSelect.innerHTML = '<option value="">선택하세요</option>'; // 기존 옵션 제거
 
-            const filteredSites = sitesList.filter(site =>
-                site.toLowerCase().includes(searchTerm.toLowerCase())
-            ).sort();
+            let filteredSites = sitesList;
+
+            // "내 담당 사이트만 보기" 체크박스가 체크된 경우 필터링
+            const showMySitesOnly = document.getElementById('showMySitesOnly').checked;
+            if (showMySitesOnly) {
+                const selectedManager = getManagerValue();
+                if (selectedManager && managerSiteMapping[selectedManager]) {
+                    const managerSites = managerSiteMapping[selectedManager];
+                    filteredSites = filteredSites.filter(site => 
+                        managerSites.includes(site)
+                    );
+                    console.log('Filtered to manager sites only:', filteredSites);
+                } else {
+                    console.log('No manager selected or no mapping found, showing all sites');
+                }
+            }
+
+            filteredSites.sort();
 
             filteredSites.forEach(site => {
                 const option = document.createElement('option');
@@ -1389,8 +1411,6 @@
             responseDiv.style.backgroundColor = '#e8f5e8';
             responseDiv.style.color = '#2e7d32';
             
-            // 네비게이션 정보 업데이트
-            updateNavigationInfo('아래 텍스트를 입력한 후 보고서 제출을 누르세요');
             
             // 1초 후 버튼 상태 복원
             setTimeout(() => {
@@ -1403,21 +1423,37 @@
         /**
          * 보고서 시트 이름 드롭다운을 업데이트합니다.
          * @param {Array<{title: string, id: number}>} sheetNamesList 표시할 시트 이름 및 ID 목록
-         * @param {string} searchTerm 시트 이름 검색어 (현재는 사용하지 않음)
          */
-        function updateReportSheetNameDropdown(sheetNamesList, searchTerm = '') {
+        function updateReportSheetNameDropdown(sheetNamesList) {
             console.log('Updating Report Sheet Name Dropdown with:', sheetNamesList); // 시트 이름 드롭다운 업데이트 전 목록 출력
             const reportSheetNameSelect = document.getElementById('reportSheetName');
             reportSheetNameSelect.innerHTML = '<option value="">선택하세요</option>'; // 기존 옵션 제거
 
-            // 검색 기능이 없으므로 모든 시트 이름 표시
-            sheetNamesList.forEach(sheet => {
+            let filteredSheets = sheetNamesList;
+            
+            // showAllSheets가 false인 경우 최근 3주(이번 주 + 과거 2주)만 표시
+            if (!showAllSheets && sheetNamesList.length > 3) {
+                filteredSheets = sheetNamesList.slice(0, 3);
+            }
+
+            // 필터링된 시트 이름 표시
+            filteredSheets.forEach(sheet => {
                 const option = document.createElement('option');
                 option.value = sheet.title;
                 option.textContent = sheet.title;
                 option.dataset.sheetId = sheet.id; // sheetId를 data-sheet-id 속성으로 저장
                 reportSheetNameSelect.appendChild(option);
             });
+
+            // 전체 시트가 3개보다 많고 showAllSheets가 false인 경우 "(더보기)" 옵션 추가
+            if (!showAllSheets && sheetNamesList.length > 3) {
+                const moreOption = document.createElement('option');
+                moreOption.value = 'more';
+                moreOption.textContent = '(더보기)';
+                moreOption.style.fontStyle = 'italic';
+                moreOption.style.color = '#666';
+                reportSheetNameSelect.appendChild(moreOption);
+            }
         }
 
         /**
@@ -1481,25 +1517,6 @@
             }
         }
 
-        // 매니저 검색 필드 이벤트 리스너
-        document.getElementById('searchManager').addEventListener('keyup', function() {
-            const searchTerm = this.value.toLowerCase();
-            const filteredManagers = originalManagers.filter(manager =>
-                manager.toLowerCase().includes(searchTerm)
-            );
-            console.log('Filtered Managers (searchManager keyup):', filteredManagers); // 매니저 검색 필터링 결과 출력
-            updateManagerDropdown(filteredManagers);
-            updateReadReportButtonState(); // 매니저 변경 시 보고서 조회 버튼 상태 업데이트
-            updateLastWeekReportButtonState(); // 매니저 변경 시 지난 주 보고서 조회 버튼 상태 업데이트
-        });
-
-        // 사이트 검색 필드 이벤트 리스너
-        document.getElementById('searchSite').addEventListener('keyup', function() {
-            const searchTerm = this.value.toLowerCase();
-            updateSiteDropdown(originalSites, searchTerm); // 매니저 필터링 없이 전체 사이트에서 검색
-            updateReadReportButtonState(); // 사이트 변경 시 보고서 조회 버튼 상태 업데이트
-            updateLastWeekReportButtonState(); // 사이트 변경 시 지난 주 보고서 조회 버튼 상태 업데이트
-        });
 
         // 매니저 드롭다운 변경 시 보고서 조회 버튼 및 고정/선택 버튼 상태 업데이트
         document.getElementById('manager').addEventListener('change', function() {
@@ -1514,6 +1531,9 @@
             updateReadReportButtonState();
             updateLastWeekReportButtonState();
             updateConfirmSiteButtonState();
+            
+            // 매니저 변경 시 사이트 드롭다운 업데이트 (체크박스 상태 반영)
+            updateSiteDropdown(originalSites);
         });
 
         // 직접입력 필드 변경 시 버튼 상태 업데이트
@@ -1521,6 +1541,9 @@
             updateReadReportButtonState();
             updateLastWeekReportButtonState();
             updateConfirmSiteButtonState();
+            
+            // 직접입력 변경 시 사이트 드롭다운 업데이트 (체크박스 상태 반영)
+            updateSiteDropdown(originalSites);
         });
 
         // 사이트 드롭다운 변경 시 보고서 조회 버튼 상태만 업데이트
@@ -1530,8 +1553,21 @@
             updateConfirmSiteButtonState();
         });
 
+        // "내 담당 사이트만 보기" 체크박스 변경 시 사이트 드롭다운 업데이트
+        document.getElementById('showMySitesOnly').addEventListener('change', function() {
+            updateSiteDropdown(originalSites);
+        });
+
         // 보고서 시트 이름 드롭다운 변경 시 보고서 조회 버튼 상태 업데이트
         document.getElementById('reportSheetName').addEventListener('change', function() {
+            // "(더보기)" 옵션이 선택된 경우 전체 시트 표시
+            if (this.value === 'more') {
+                showAllSheets = true;
+                updateReportSheetNameDropdown(originalReportSheetNames);
+                this.value = ''; // 선택 초기화
+                return;
+            }
+            
             updateReadReportButtonState();
             updateLastWeekReportButtonState();
             updateConfirmSiteButtonState();
@@ -2061,11 +2097,6 @@
             }
         }
 
-        // 네비게이션 정보 업데이트 함수
-        function updateNavigationInfo(message) {
-            const navInfo = document.getElementById('navigationInfo');
-            navInfo.textContent = message;
-        }
 
         // 리스트 데이터 복사 함수
         async function copyListData(containerId) {
@@ -2638,6 +2669,11 @@
             }
             return letter;
         }
+
+        // 페이지 로드 시 매핑 데이터 로드
+        window.addEventListener('DOMContentLoaded', function() {
+            loadManagerSiteMapping();
+        });
     </script>
 
     <script src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>

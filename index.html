@@ -920,9 +920,14 @@
         async function loadManagerSiteMapping() {
             try {
                 const response = await fetch('./manager_site_mapping.json');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
                 const data = await response.json();
                 managerSiteMapping = data.managerSiteMapping;
-                console.log('Manager-Site mapping loaded:', managerSiteMapping);
+                console.log('Manager-Site mapping loaded successfully:', Object.keys(managerSiteMapping).length, 'managers');
             } catch (error) {
                 console.error('Error loading manager-site mapping:', error);
                 managerSiteMapping = {};
@@ -1240,6 +1245,7 @@
 
             // "내 담당 사이트만 보기" 체크박스가 체크된 경우 필터링
             const showMySitesOnly = document.getElementById('showMySitesOnly').checked;
+            
             if (showMySitesOnly) {
                 const selectedManager = getManagerValue();
                 if (selectedManager && managerSiteMapping[selectedManager]) {
@@ -1247,7 +1253,7 @@
                     filteredSites = filteredSites.filter(site => 
                         managerSites.includes(site)
                     );
-                    console.log('Filtered to manager sites only:', filteredSites);
+                    console.log('Filtered to manager sites only:', filteredSites.length, 'sites for', selectedManager);
                 } else {
                     console.log('No manager selected or no mapping found, showing all sites');
                 }

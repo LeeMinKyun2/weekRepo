@@ -18,6 +18,8 @@ COPY nginx.conf /etc/nginx/conf.d/
 # 웹 파일들과 환경변수 주입 스크립트 복사
 COPY index.html /usr/share/nginx/html/
 COPY env-inject.js /usr/share/nginx/html/
+COPY manager_site_mapping.json /usr/share/nginx/html/
+COPY customer_sites_simple.json /usr/share/nginx/html/
 
 # 환경변수 주입 스크립트 실행 후 nginx 실행
 CMD ["sh", "-c", "cd /usr/share/nginx/html && node env-inject.js && nginx -g 'daemon off;'"]

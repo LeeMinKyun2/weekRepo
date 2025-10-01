@@ -396,13 +396,6 @@
         }
         button:hover { background-color: #45a049; }
         button:disabled { background-color: #cccccc; cursor: not-allowed; }
-        #confirmSiteButton {
-            background-color: #2196F3;
-            margin-left: 10px;
-            padding: 8px 16px;
-            font-size: 14px;
-        }
-        #confirmSiteButton:hover:not(:disabled) { background-color: #1976D2; }
         .response { margin-top: 20px; padding: 10px; background-color: #e2e2e2; border-radius: 4px; }
         
         /* 헤더 섹션 스타일 */
@@ -715,7 +708,6 @@
                     <button type="button" id="queryDropdownsButton" disabled>매니저/사이트 목록 조회</button>
                 </div>
                 <div class="form-group button-group">
-                    <button type="button" id="confirmSiteButton" disabled>고정/선택</button>
                     <button type="button" id="readReportButton" disabled>보고서 조회</button>
                     <button type="button" id="readLastWeekReportButton" disabled>지난 주 보고서 조회</button>
                 </div>
@@ -752,8 +744,7 @@
                                     <button type="button" class="paste-btn" onclick="pasteListData('this_week_tasks_container')" title="금주 한 일 붙여넣기">Paste</button>
                                 </div>
                             </div>
-                            <input type="text" placeholder="금주 한 일을 입력하세요..." class="list-input"
-                                   onkeydown="preventEnterSubmit(event)" onkeypress="preventEnterSubmit(event)">
+                            <textarea placeholder="금주 한 일을 입력하세요..." class="list-input" rows="3"></textarea>
                             <button type="button" class="remove-btn" onclick="removeListItem(this)">×</button>
                         </div>
                     </div>
@@ -788,8 +779,7 @@
                                     <button type="button" class="paste-btn" onclick="pasteListData('next_week_tasks_container')" title="향후 할 일 붙여넣기">Paste</button>
                                 </div>
                             </div>
-                            <input type="text" placeholder="향후 할 일을 입력하세요..." class="list-input"
-                                   onkeydown="preventEnterSubmit(event)" onkeypress="preventEnterSubmit(event)">
+                            <textarea placeholder="향후 할 일을 입력하세요..." class="list-input" rows="3"></textarea>
                             <button type="button" class="remove-btn" onclick="removeListItem(this)">×</button>
                         </div>
                     </div>
@@ -814,8 +804,7 @@
                                     <button type="button" class="paste-btn" onclick="pasteListItemData(this)" title="이 항목에 붙여넣기">Paste</button>
                                 </div>
                             </div>
-                            <input type="text" placeholder="고객 요청사항을 입력하세요..." class="list-input"
-                                   onkeydown="preventEnterSubmit(event)" onkeypress="preventEnterSubmit(event)">
+                            <textarea placeholder="고객 요청사항을 입력하세요..." class="list-input" rows="3"></textarea>
                             <button type="button" class="remove-btn" onclick="removeListItem(this)">×</button>
                         </div>
                     </div>
@@ -827,6 +816,37 @@
             </div>
         </form>
         <div id="response" class="response" style="display: none;"></div>
+    </div>
+
+    <!-- 제출 완료 모달 -->
+    <div id="submitSuccessModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header" style="background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white;">
+                <h2>✅ 제출 완료</h2>
+                <span class="close" onclick="closeSubmitSuccessModal()">&times;</span>
+            </div>
+            <div class="modal-body" style="text-align: center; padding: 40px 20px;">
+                <div style="font-size: 48px; margin-bottom: 20px;">🎉</div>
+                <h3 style="color: #4CAF50; margin-bottom: 15px;">보고서가 성공적으로 제출되었습니다!</h3>
+                <p style="color: #666; margin-bottom: 30px;">Google Sheets에 저장되었습니다.</p>
+                <div id="submitSuccessSheetLink" style="margin-bottom: 30px;"></div>
+                <button onclick="closeSubmitSuccessModal()" style="
+                    background: #4CAF50;
+                    color: white;
+                    border: none;
+                    padding: 12px 40px;
+                    font-size: 16px;
+                    border-radius: 5px;
+                    cursor: pointer;
+                    font-weight: bold;
+                    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+                    transition: all 0.3s ease;
+                " onmouseover="this.style.background='#45a049'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.3)'" 
+                   onmouseout="this.style.background='#4CAF50'; this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 5px rgba(0,0,0,0.2)'">
+                    확인
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- 사용법 팝업 모달 -->
@@ -857,21 +877,14 @@
                 <div class="step">
                     <div class="step-number">3️⃣</div>
                     <div class="step-content">
-                        <strong>고정/선택</strong><br>
-                        "고정/선택" 버튼을 클릭하여 사이트별 설정을 확인합니다.
+                        <strong>보고서 제출</strong><br>
+                        텍스트를 입력한 후 "보고서 제출" 버튼을 클릭합니다.<br>
+                        <em>💡 사이트 선택 시 프로젝트 사이트인 경우 고객 요청사항이 자동으로 비활성화됩니다.</em>
                     </div>
                 </div>
                 
                 <div class="step">
                     <div class="step-number">4️⃣</div>
-                    <div class="step-content">
-                        <strong>보고서 제출</strong><br>
-                        텍스트를 입력한 후 "보고서 제출" 버튼을 클릭합니다.
-                    </div>
-                </div>
-                
-                <div class="step">
-                    <div class="step-number">5️⃣</div>
                     <div class="step-content">
                         <strong>수정 시</strong><br>
                         기존 데이터를 수정할 때는 "보고서 조회" 버튼으로 데이터를 불러온 후 수정하고 "보고서 제출" 버튼을 클릭합니다.
@@ -1179,9 +1192,6 @@
                 
                 // 초기 상태에서 고객 요청사항 필드 상태 설정
                 toggleCustomerRequestsField('');
-                
-                // 초기 상태에서 "고정/선택" 버튼 상태 설정
-                updateConfirmSiteButtonState();
 
                 // Google Sheets 링크 생성 (전체 스프레드시트)
                 const mainSheetUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/edit`;
@@ -1296,23 +1306,6 @@
             }
         }
 
-        /**
-         * "고정/선택" 버튼의 활성화/비활성화 상태를 업데이트합니다.
-         */
-        function updateConfirmSiteButtonState() {
-            const confirmButton = document.getElementById('confirmSiteButton');
-            const managerValue = getManagerValue();
-            const siteSelected = document.getElementById('site_name').value !== '';
-            const reportSheetSelected = document.getElementById('reportSheetName').value !== '';
-            
-            if (managerValue !== '' && siteSelected && reportSheetSelected) {
-                confirmButton.disabled = false;
-                confirmButton.textContent = '고정/선택';
-            } else {
-                confirmButton.disabled = true;
-                confirmButton.textContent = '고정/선택';
-            }
-        }
 
         /**
          * 선택된 사이트에 따라 고객 요청사항 필드를 활성화/비활성화합니다.
@@ -1368,63 +1361,6 @@
             }
         }
 
-        /**
-         * "고정/선택" 버튼 클릭 시 호출되는 함수
-         */
-        function confirmSiteSelection() {
-            const managerValue = getManagerValue();
-            const siteSelected = document.getElementById('site_name').value;
-            const reportSheetSelected = document.getElementById('reportSheetName').value;
-            const responseDiv = document.getElementById('response');
-            const confirmButton = document.getElementById('confirmSiteButton');
-            
-            // 모든 드롭다운이 선택되었는지 확인
-            if (!managerValue || !siteSelected || !reportSheetSelected) {
-                responseDiv.textContent = '매니저, 담당 사이트, 보고서 시트 이름을 모두 선택해주세요.';
-                responseDiv.style.display = 'block';
-                responseDiv.style.backgroundColor = '#ffebee';
-                responseDiv.style.color = '#c62828';
-                return;
-            }
-            
-            // 버튼 시각적 피드백
-            confirmButton.disabled = true;
-            confirmButton.textContent = '처리 중...';
-            confirmButton.style.backgroundColor = '#6c757d';
-            
-            // 디버깅을 위한 로그 추가
-            console.log('Selected site:', siteSelected);
-            console.log('Sites without customer requests:', sitesWithoutCustomerRequests);
-            console.log('Is site in exception list?', sitesWithoutCustomerRequests.includes(siteSelected));
-            
-            // 사이트 선택에 따라 고객 요청사항 필드 상태 설정
-            toggleCustomerRequestsField(siteSelected);
-            
-            // Google Sheets 링크 생성 (선택된 보고서 시트에 따라)
-            const selectedReportSheetName = document.getElementById('reportSheetName').value;
-            const selectedOption = document.getElementById('reportSheetName').selectedOptions[0];
-            const reportSheetId = selectedOption ? selectedOption.dataset.sheetId : '';
-            const sheetUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/edit#gid=${reportSheetId}`;
-            
-            // 성공 메시지 표시
-            responseDiv.innerHTML = `
-                사이트 선택이 확정되었습니다: ${siteSelected}<br>
-                <a href="${sheetUrl}" target="_blank" style="color: #1976d2; text-decoration: underline; margin-top: 10px; display: inline-block;">
-                    📊 Google Sheets에서 확인하기
-                </a>
-            `;
-            responseDiv.style.display = 'block';
-            responseDiv.style.backgroundColor = '#e8f5e8';
-            responseDiv.style.color = '#2e7d32';
-            
-            
-            // 1초 후 버튼 상태 복원
-            setTimeout(() => {
-                confirmButton.disabled = false;
-                confirmButton.textContent = '고정/선택';
-                confirmButton.style.backgroundColor = '#2196F3';
-            }, 1000);
-        }
 
         /**
          * 보고서 시트 이름 드롭다운을 업데이트합니다.
@@ -1551,7 +1487,7 @@
         }
 
 
-        // 매니저 드롭다운 변경 시 보고서 조회 버튼 및 고정/선택 버튼 상태 업데이트
+        // 매니저 드롭다운 변경 시 보고서 조회 버튼 상태 업데이트
         document.getElementById('manager').addEventListener('change', function() {
             const directInput = document.getElementById('managerDirectInput');
             if (this.value === '직접입력') {
@@ -1563,7 +1499,6 @@
             }
             updateReadReportButtonState();
             updateLastWeekReportButtonState();
-            updateConfirmSiteButtonState();
             
             // 매니저 변경 시 사이트 드롭다운 업데이트 (체크박스 상태 반영)
             updateSiteDropdown(originalSites);
@@ -1573,17 +1508,22 @@
         document.getElementById('managerDirectInput').addEventListener('input', function() {
             updateReadReportButtonState();
             updateLastWeekReportButtonState();
-            updateConfirmSiteButtonState();
             
             // 직접입력 변경 시 사이트 드롭다운 업데이트 (체크박스 상태 반영)
             updateSiteDropdown(originalSites);
         });
 
-        // 사이트 드롭다운 변경 시 보고서 조회 버튼 상태만 업데이트
+        // 사이트 드롭다운 변경 시 보고서 조회 버튼 상태 업데이트 및 고객 요청사항 필드 자동 활성화/비활성화
         document.getElementById('site_name').addEventListener('change', function() {
+            const selectedSite = this.value;
+            
+            // 사이트 선택 시 자동으로 고객 요청사항 필드 활성화/비활성화
+            if (selectedSite) {
+                toggleCustomerRequestsField(selectedSite);
+            }
+            
             updateReadReportButtonState();
             updateLastWeekReportButtonState();
-            updateConfirmSiteButtonState();
         });
 
         // "내 담당 사이트만 보기" 체크박스 변경 시 사이트 드롭다운 업데이트
@@ -1603,11 +1543,8 @@
             
             updateReadReportButtonState();
             updateLastWeekReportButtonState();
-            updateConfirmSiteButtonState();
         });
 
-        // "고정/선택" 버튼 클릭 이벤트 리스너
-        document.getElementById('confirmSiteButton').addEventListener('click', confirmSiteSelection);
 
         // "보고서 조회" 버튼의 활성화/비활성화 상태를 업데이트하는 헬퍼 함수
         function updateReadReportButtonState() {
@@ -1802,22 +1739,19 @@
 
                 // Google Sheets 링크 생성
                 const sheetUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/edit#gid=${REPORT_SHEET_ID}`;
-                responseDiv.innerHTML = `
-                    보고서가 성공적으로 제출되었습니다!<br>
-                    <a href="${sheetUrl}" target="_blank" style="color: #1976d2; text-decoration: underline; margin-top: 10px; display: inline-block;">
-                        📊 Google Sheets에서 확인하기
-                    </a>
-                `;
+                
+                // 제출 완료 모달 표시
+                showSubmitSuccessModal(sheetUrl);
+                
+                // 기존 응답 영역 숨김
+                responseDiv.style.display = 'none';
 
-                // 드롭다운 값 확인 (초기화되기 전)
-                console.log('Manager dropdown value before clearing text fields:', document.getElementById('manager').value);
-                console.log('Site dropdown value before clearing text fields:', document.getElementById('site_name').value);
-                console.log('Report Sheet Name dropdown value before clearing text fields:', document.getElementById('reportSheetName').value);
+                // 드롭다운 값 확인
+                console.log('Manager dropdown value:', document.getElementById('manager').value);
+                console.log('Site dropdown value:', document.getElementById('site_name').value);
+                console.log('Report Sheet Name dropdown value:', document.getElementById('reportSheetName').value);
 
-                // 리스트 필드만 초기화
-                setListData('this_week_tasks_container', '');
-                setListData('next_week_tasks_container', '');
-                setListData('customer_requests_container', '');
+                // 제출 후에도 입력 내용 유지 (초기화하지 않음)
 
             } catch (err) {
                 console.error('Error submitting report:', err);
@@ -2072,6 +2006,38 @@
         // 지난 주 보고서 조회 버튼 이벤트 리스너
         document.getElementById('readLastWeekReportButton').addEventListener('click', readLastWeekReportData);
 
+        // 제출 완료 모달 관련 함수
+        function showSubmitSuccessModal(sheetUrl) {
+            const modal = document.getElementById('submitSuccessModal');
+            const linkDiv = document.getElementById('submitSuccessSheetLink');
+            
+            // Google Sheets 링크 설정
+            linkDiv.innerHTML = `
+                <a href="${sheetUrl}" target="_blank" style="
+                    color: #4CAF50;
+                    text-decoration: none;
+                    font-weight: bold;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 8px;
+                    padding: 10px 20px;
+                    border: 2px solid #4CAF50;
+                    border-radius: 5px;
+                    transition: all 0.3s ease;
+                " onmouseover="this.style.background='#4CAF50'; this.style.color='white'" 
+                   onmouseout="this.style.background='transparent'; this.style.color='#4CAF50'">
+                    📊 Google Sheets에서 확인하기
+                </a>
+            `;
+            
+            modal.style.display = 'block';
+        }
+
+        function closeSubmitSuccessModal() {
+            const modal = document.getElementById('submitSuccessModal');
+            modal.style.display = 'none';
+        }
+
         // 사용법 팝업 이벤트 리스너
         const helpButton = document.getElementById('helpButton');
         const helpModal = document.getElementById('helpModal');
@@ -2087,25 +2053,35 @@
 
         // 배경 클릭 시 모달 닫기
         window.addEventListener('click', function(event) {
+            const submitSuccessModal = document.getElementById('submitSuccessModal');
+            
             if (event.target === helpModal) {
                 helpModal.style.display = 'none';
+            }
+            if (event.target === submitSuccessModal) {
+                closeSubmitSuccessModal();
             }
         });
 
         // ESC 키로 모달 닫기
         document.addEventListener('keydown', function(event) {
+            const submitSuccessModal = document.getElementById('submitSuccessModal');
+            
             if (event.key === 'Escape' && helpModal.style.display === 'block') {
                 helpModal.style.display = 'none';
+            }
+            if (event.key === 'Escape' && submitSuccessModal.style.display === 'block') {
+                closeSubmitSuccessModal();
             }
         });
 
         // 폼 내부에서 엔터키로 제출되는 것을 방지 (데스크톱 + 모바일)
         document.getElementById('reportForm').addEventListener('keydown', function(event) {
             if (event.key === 'Enter') {
-                // 입력 필드에서 엔터키를 누른 경우 제출 방지
-                if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+                // INPUT 필드에서만 엔터키 제출 방지, TEXTAREA는 허용
+                if (event.target.tagName === 'INPUT') {
                     event.preventDefault();
-                    console.log('Enter key submission blocked in form fields');
+                    console.log('Enter key submission blocked in input fields');
                 }
             }
         });
@@ -2113,22 +2089,13 @@
         // 모바일에서 가상 키보드의 "완료" 버튼으로 제출되는 것을 방지
         document.getElementById('reportForm').addEventListener('keypress', function(event) {
             if (event.key === 'Enter' || event.keyCode === 13) {
-                // 모바일 가상 키보드의 완료 버튼 방지
-                if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+                // INPUT 필드에서만 제출 방지, TEXTAREA는 줄바꿈 허용
+                if (event.target.tagName === 'INPUT') {
                     event.preventDefault();
-                    console.log('Mobile keyboard submission blocked');
+                    console.log('Mobile keyboard submission blocked in input fields');
                 }
             }
         });
-
-        // 엔터키 제출 방지 함수 (모바일 + 데스크톱)
-        function preventEnterSubmit(event) {
-            if (event.key === 'Enter' || event.keyCode === 13) {
-                event.preventDefault();
-                console.log('Enter key submission prevented');
-                return false;
-            }
-        }
 
 
         // 리스트 데이터 복사 함수
@@ -2359,8 +2326,7 @@
                             <button type="button" class="paste-btn" onclick="pasteListItemData(this)" title="이 항목에 붙여넣기">Paste</button>
                         </div>
                     </div>
-                    <input type="text" placeholder="고객 요청사항을 입력하세요..." class="list-input"
-                           onkeydown="preventEnterSubmit(event)" onkeypress="preventEnterSubmit(event)">
+                    <textarea placeholder="고객 요청사항을 입력하세요..." class="list-input" rows="3"></textarea>
                     <button type="button" class="remove-btn" onclick="removeListItem(this)">×</button>
                 `;
             } else if (containerId === 'this_week_tasks_container' || containerId === 'next_week_tasks_container') {
@@ -2390,14 +2356,12 @@
                             <button type="button" class="paste-btn" onclick="pasteListItemData(this)" title="이 항목에 붙여넣기">Paste</button>
                         </div>
                     </div>
-                    <input type="text" placeholder="${placeholder}" class="list-input"
-                           onkeydown="preventEnterSubmit(event)" onkeypress="preventEnterSubmit(event)">
+                    <textarea placeholder="${placeholder}" class="list-input" rows="3"></textarea>
                     <button type="button" class="remove-btn" onclick="removeListItem(this)">×</button>
                 `;
             } else {
                 newItem.innerHTML = `
-                    <input type="text" placeholder="항목을 입력하세요..." class="list-input"
-                           onkeydown="preventEnterSubmit(event)" onkeypress="preventEnterSubmit(event)">
+                    <textarea placeholder="항목을 입력하세요..." class="list-input" rows="3"></textarea>
                     <button type="button" class="remove-btn" onclick="removeListItem(this)">×</button>
                 `;
             }
@@ -2455,54 +2419,72 @@
             }
             
             const items = container.querySelectorAll('.list-input-item');
-            const values = Array.from(items)
-                .map(item => {
-                    const textInput = item.querySelector('.list-input');
-                    const dateInput = item.querySelector('.date-input');
-                    const checkboxes = item.querySelectorAll('input[type="checkbox"]:checked');
-                    
-                    if (!textInput || textInput.value.trim() === '') {
-                        return null; // 텍스트가 비어있으면 제외
-                    }
-                    
-                    const text = textInput.value.trim();
-                    const date = dateInput ? dateInput.value : '';
-                    
+            const itemTexts = [];
+            
+            Array.from(items).forEach((item, itemIndex) => {
+                const textInput = item.querySelector('.list-input');
+                const dateInput = item.querySelector('.date-input');
+                const checkboxes = item.querySelectorAll('input[type="checkbox"]:checked');
+                
+                if (!textInput || textInput.value.trim() === '') {
+                    return; // 텍스트가 비어있으면 제외
+                }
+                
+                const text = textInput.value.trim();
+                const date = dateInput ? dateInput.value : '';
+                
+                // textarea의 여러 줄을 각각 처리
+                const lines = text.split('\n').filter(line => line.trim() !== '');
+                const itemLines = [];
+                
+                lines.forEach((line, lineIndex) => {
                     // 기존 텍스트에서 ▶ 제거하고 깨끗한 텍스트만 추출
-                    const cleanValue = text.replace(/^▶\s*/, '').trim();
+                    const cleanValue = line.replace(/^▶\s*/, '').trim();
                     
                     // 공백이 아닌 경우에만 처리
                     if (cleanValue === '') {
-                        return null;
+                        return;
                     }
                     
                     let finalValue = cleanValue;
                     
-                    // 작업 대상 선택이 있는 경우 (금주 한 일, 향후 할 일)
-                    if (checkboxes.length > 0 && (containerId === 'this_week_tasks_container' || containerId === 'next_week_tasks_container')) {
-                        const selectedTargets = Array.from(checkboxes).map(cb => cb.value);
-                        finalValue = `[${selectedTargets.join(',')}] ${cleanValue}`;
+                    // 첫 줄에만 작업 대상과 날짜 추가
+                    if (lineIndex === 0) {
+                        // 작업 대상 선택이 있는 경우 (금주 한 일, 향후 할 일)
+                        if (checkboxes.length > 0 && (containerId === 'this_week_tasks_container' || containerId === 'next_week_tasks_container')) {
+                            const selectedTargets = Array.from(checkboxes).map(cb => cb.value);
+                            finalValue = `[${selectedTargets.join(',')}] ${cleanValue}`;
+                        }
+                        
+                        // 고객 요청사항인 경우 날짜 추가
+                        if (containerId === 'customer_requests_container' && date) {
+                            // 날짜 형식을 YY.MM.DD로 변환
+                            const dateObj = new Date(date);
+                            const formattedDate = `${dateObj.getFullYear().toString().slice(-2)}.${(dateObj.getMonth() + 1).toString().padStart(2, '0')}.${dateObj.getDate().toString().padStart(2, '0')}`;
+                            finalValue = `${cleanValue} (발생일 : ${formattedDate})`;
+                        }
                     }
                     
-                    // 고객 요청사항인 경우 날짜 추가
-                    if (containerId === 'customer_requests_container' && date) {
-                        // 날짜 형식을 YY.MM.DD로 변환
-                        const dateObj = new Date(date);
-                        const formattedDate = `${dateObj.getFullYear().toString().slice(-2)}.${(dateObj.getMonth() + 1).toString().padStart(2, '0')}.${dateObj.getDate().toString().padStart(2, '0')}`;
-                        finalValue = `${cleanValue} (발생일 : ${formattedDate})`;
-                    }
-                    
-                    return finalValue;
-                })
-                .filter(value => value !== null) // null 값 제거
-                .map((value, index) => {
-                    // 첫 줄(index 0)은 ▶ 없이, 나머지는 ▶ 추가
-                    if (index === 0) {
-                        return value;
-                    } else {
-                        return `▶ ${value}`;
-                    }
+                    itemLines.push(finalValue);
                 });
+                
+                // 각 항목의 줄들을 줄바꿈으로 연결
+                if (itemLines.length > 0) {
+                    itemTexts.push(itemLines.join('\n'));
+                }
+            });
+            
+            // 첫 번째 항목은 ▶ 없이, 나머지 항목은 첫 줄에 ▶ 추가
+            const values = itemTexts.map((text, index) => {
+                if (index === 0) {
+                    return text;
+                } else {
+                    // 첫 줄에만 ▶ 추가
+                    const lines = text.split('\n');
+                    lines[0] = `▶ ${lines[0]}`;
+                    return lines.join('\n');
+                }
+            });
             
             const result = values.join('\n');
             console.log(`getListData result for ${containerId}:`, result);
@@ -2555,36 +2537,74 @@
             // 기존 항목들 제거
             container.innerHTML = '';
             
-            // 새 항목들 추가 (▶ 완전 제거)
+            // ▶를 기준으로 항목 그룹 나누기
+            const itemGroups = [];
+            let currentGroup = [];
+            
             lines.forEach((line, index) => {
-                // 모든 ▶ 기호와 공백 제거
-                let cleanLine = line.replace(/^▶\s*/g, '').trim();
+                const trimmedLine = line.trim();
+                
+                // ▶로 시작하는 경우 또는 첫 줄인 경우
+                if (trimmedLine.startsWith('▶') || index === 0) {
+                    // 이전 그룹이 있으면 저장
+                    if (currentGroup.length > 0) {
+                        itemGroups.push(currentGroup);
+                    }
+                    // 새 그룹 시작
+                    currentGroup = [trimmedLine];
+                } else {
+                    // 현재 그룹에 추가
+                    currentGroup.push(trimmedLine);
+                }
+            });
+            
+            // 마지막 그룹 추가
+            if (currentGroup.length > 0) {
+                itemGroups.push(currentGroup);
+            }
+            
+            // 각 그룹마다 별도의 항목 생성
+            itemGroups.forEach((group, groupIndex) => {
                 let dateValue = '';
                 let selectedTargets = [];
+                let cleanLines = [];
                 
-                // 작업 대상 파싱 (금주 한 일, 향후 할 일)
-                if (containerId === 'this_week_tasks_container' || containerId === 'next_week_tasks_container') {
-                    const targetMatch = cleanLine.match(/^\[([^\]]+)\]\s*(.*)$/);
-                    if (targetMatch) {
-                        selectedTargets = targetMatch[1].split(',').map(t => t.trim());
-                        cleanLine = targetMatch[2].trim();
-                    }
-                }
-                
-                // 고객 요청사항인 경우 날짜 파싱
-                if (containerId === 'customer_requests_container') {
-                    const dateMatch = cleanLine.match(/\(발생일\s*:\s*(\d{2}\.\d{2}\.\d{2})\)$/);
-                    if (dateMatch) {
-                        // 날짜 부분 제거
-                        cleanLine = cleanLine.replace(/\s*\(발생일\s*:\s*\d{2}\.\d{2}\.\d{2}\)$/, '').trim();
+                group.forEach((line, lineIndex) => {
+                    // ▶ 기호와 공백 제거
+                    let cleanLine = line.replace(/^▶\s*/g, '').trim();
+                    
+                    // 첫 줄에서만 작업 대상과 날짜 파싱
+                    if (lineIndex === 0) {
+                        // 작업 대상 파싱 (금주 한 일, 향후 할 일)
+                        if (containerId === 'this_week_tasks_container' || containerId === 'next_week_tasks_container') {
+                            const targetMatch = cleanLine.match(/^\[([^\]]+)\]\s*(.*)$/);
+                            if (targetMatch) {
+                                selectedTargets = targetMatch[1].split(',').map(t => t.trim());
+                                cleanLine = targetMatch[2].trim();
+                            }
+                        }
                         
-                        // YY.MM.DD 형식을 YYYY-MM-DD로 변환
-                        const dateStr = dateMatch[1];
-                        const [year, month, day] = dateStr.split('.');
-                        const fullYear = '20' + year; // 20XX년으로 변환
-                        dateValue = `${fullYear}-${month}-${day}`;
+                        // 고객 요청사항인 경우 날짜 파싱
+                        if (containerId === 'customer_requests_container') {
+                            const dateMatch = cleanLine.match(/\(발생일\s*:\s*(\d{2}\.\d{2}\.\d{2})\)$/);
+                            if (dateMatch) {
+                                // 날짜 부분 제거
+                                cleanLine = cleanLine.replace(/\s*\(발생일\s*:\s*\d{2}\.\d{2}\.\d{2}\)$/, '').trim();
+                                
+                                // YY.MM.DD 형식을 YYYY-MM-DD로 변환
+                                const dateStr = dateMatch[1];
+                                const [year, month, day] = dateStr.split('.');
+                                const fullYear = '20' + year; // 20XX년으로 변환
+                                dateValue = `${fullYear}-${month}-${day}`;
+                            }
+                        }
                     }
-                }
+                    
+                    cleanLines.push(cleanLine);
+                });
+                
+                // 그룹의 모든 줄을 줄바꿈으로 연결
+                const textareaValue = cleanLines.join('\n');
                 
                 const newItem = document.createElement('div');
                 newItem.className = 'list-input-item';
@@ -2602,14 +2622,13 @@
                                 <button type="button" class="paste-btn" onclick="pasteListItemData(this)" title="이 항목에 붙여넣기">Paste</button>
                             </div>
                         </div>
-                        <input type="text" value="${cleanLine}" class="list-input"
-                               onkeydown="preventEnterSubmit(event)" onkeypress="preventEnterSubmit(event)">
+                        <textarea class="list-input" rows="3">${textareaValue}</textarea>
                         <button type="button" class="remove-btn" onclick="removeListItem(this)">×</button>
                     `;
                 } else if (containerId === 'this_week_tasks_container' || containerId === 'next_week_tasks_container') {
                     // 금주 한 일, 향후 할 일인 경우 작업 대상 선택 추가
                     newItem.className = 'list-input-item customer-request-item';
-                    const itemIndex = index + 1;
+                    const itemIndex = groupIndex + 1;
                     const prefix = containerId === 'this_week_tasks_container' ? 'this_week' : 'next_week';
                     const placeholder = containerId === 'this_week_tasks_container' ? '금주 한 일을 입력하세요...' : '향후 할 일을 입력하세요...';
                     
@@ -2638,14 +2657,12 @@
                                 <button type="button" class="paste-btn" onclick="pasteListItemData(this)" title="이 항목에 붙여넣기">Paste</button>
                             </div>
                         </div>
-                        <input type="text" value="${cleanLine}" placeholder="${placeholder}" class="list-input"
-                               onkeydown="preventEnterSubmit(event)" onkeypress="preventEnterSubmit(event)">
+                        <textarea placeholder="${placeholder}" class="list-input" rows="3">${textareaValue}</textarea>
                         <button type="button" class="remove-btn" onclick="removeListItem(this)">×</button>
                     `;
                 } else {
                     newItem.innerHTML = `
-                        <input type="text" value="${cleanLine}" class="list-input"
-                               onkeydown="preventEnterSubmit(event)" onkeypress="preventEnterSubmit(event)">
+                        <textarea class="list-input" rows="3">${textareaValue}</textarea>
                         <button type="button" class="remove-btn" onclick="removeListItem(this)">×</button>
                     `;
                 }
@@ -2653,7 +2670,7 @@
             });
             
             // 빈 항목이 없으면 하나 추가
-            if (lines.length === 0) {
+            if (itemGroups.length === 0) {
                 addListItem(containerId);
             }
         }

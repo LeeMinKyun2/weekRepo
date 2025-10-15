@@ -926,6 +926,9 @@
         // 매니저-사이트 매핑 데이터
         let managerSiteMapping = {};
         
+        // 사이트 목록 데이터
+        let siteListData = {};
+        
         // 보고서 시트 필터링 관련 변수
         let showAllSheets = false;
 
@@ -944,6 +947,26 @@
             } catch (error) {
                 console.error('Error loading manager-site mapping:', error);
                 managerSiteMapping = {};
+            }
+        }
+
+        // 사이트 목록 데이터 로드
+        async function loadSiteList() {
+            try {
+                const response = await fetch('./site_list.json');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                siteListData = data.sites;
+                console.log('Site list loaded successfully:', 
+                    '일반사이트:', siteListData.일반사이트?.length || 0, 
+                    '프로젝트사이트:', siteListData.프로젝트사이트?.length || 0);
+            } catch (error) {
+                console.error('Error loading site list:', error);
+                siteListData = { 일반사이트: [], 프로젝트사이트: [] };
             }
         }
 
@@ -1040,22 +1063,12 @@
                     range: MANAGER_RANGE,
                 });
 
-                // 사이트 데이터 가져오기 (기존 방식)
-                const siteResponse = await gapi.client.sheets.spreadsheets.values.get({
-                    spreadsheetId: SPREADSHEET_ID,
-                    range: SITE_RANGE,
-                });
-
                 console.log('Google Sheets API Response (Manager Data):', managerResponse); // API 응답 출력
-                console.log('Google Sheets API Response (Site Data):', siteResponse); // API 응답 출력
 
                 const managerData = managerResponse.result.values || [];
-                const siteData = siteResponse.result.values || [];
                 console.log('Extracted managerData:', managerData); // 추출된 매니저 데이터 출력
-                console.log('Extracted siteData:', siteData); // 추출된 사이트 데이터 출력
 
                 const managers = new Set();
-                const sites = new Set();
 
                 // 매니저 이름 처리 (B4부터 시작하므로 헤더 없이 바로 처리)
                 for (let r = 0; r < managerData.length; r++) {
@@ -1065,25 +1078,15 @@
                     }
                 }
 
-                // 사이트 데이터 처리 (기존 방식 유지)
-                for (let r = 0; r < siteData.length; r++) {
-                    const rowData = siteData[r] || [];
-                    // Sites start from Column E (index 4)
-                    for (let c = 4; c < rowData.length; c++) {
-                        const siteCell = rowData[c] ? rowData[c].trim() : '';
-                        if (siteCell !== '') {
-                            sites.add(siteCell);
-                        }
-                    }
-                }
-
                 originalManagers = Array.from(managers).sort();
-                // originalSites = Array.from(sites).sort(); // SITE 분장 현황에서 사이트 가져오는 로직 주석 처리
                 console.log('Original Managers:', originalManagers); // 원본 매니저 목록 출력
-                // console.log('Original Sites:', originalSites);     // 원본 사이트 목록 출력 (임시 주석 처리)
 
                 // 매니저 드롭다운 채우기
                 updateManagerDropdown(originalManagers);
+                
+                // 사이트 목록은 site_list.json에서 가져오기 (더 이상 Google Sheets에서 가져오지 않음)
+                console.log('사이트 목록은 site_list.json에서 로드됨');
+                console.log('일반사이트:', siteListData.일반사이트?.length || 0, '프로젝트사이트:', siteListData.프로젝트사이트?.length || 0);
 
                 // 스프레드시트 메타데이터 가져와서 YYYY-MM-DD 형식의 시트 이름 찾기
                 console.log('Requesting spreadsheet metadata...');
@@ -1110,81 +1113,72 @@
                 // 이번 주 작성 시트 정보 표시
                 updateWeeklySheetInfo();
 
-                // --- 이제 가장 최신 YYYY-MM-DD 시트에서 SITE명 가져오기 ---
+                // --- site_list.json에서 사이트 목록 가져오기 ---
+                console.log('사이트 목록을 site_list.json에서 가져옵니다.');
+                
+                // 일반사이트와 프로젝트사이트를 합쳐서 전체 사이트 목록 생성
+                const allSites = new Set();
+                
+                // 일반사이트 추가
+                if (siteListData.일반사이트 && Array.isArray(siteListData.일반사이트)) {
+                    siteListData.일반사이트.forEach(site => allSites.add(site));
+                }
+                
+                // 프로젝트사이트 추가
+                if (siteListData.프로젝트사이트 && Array.isArray(siteListData.프로젝트사이트)) {
+                    siteListData.프로젝트사이트.forEach(site => allSites.add(site));
+                }
+                
+                originalSites = Array.from(allSites).sort();
+                console.log('Total sites from site_list.json:', originalSites.length);
+                console.log('일반사이트:', siteListData.일반사이트?.length || 0);
+                console.log('프로젝트사이트:', siteListData.프로젝트사이트?.length || 0);
+                
+                // --- L열 40행 이후 사이트들 (고객 요청사항 입력 불가)을 동적으로 가져오기 ---
                 if (originalReportSheetNames.length > 0) {
                     const latestReportSheetName = originalReportSheetNames[0].title; // 가장 최신 시트 (정렬되어 있음)
-                    console.log('Fetching site names from latest report sheet:', latestReportSheetName);
+                    console.log('Fetching L column sites from latest report sheet:', latestReportSheetName);
 
-                    // 사용자 제공 패턴에 따른 SITE명 셀 범위 (전체 범위로 확장)
-                    const siteNameRanges = [
-                        `'${latestReportSheetName}'!B:B`, // B열 전체에서 SITE명 찾기
-                        `'${latestReportSheetName}'!G:G`, // G열 전체에서 SITE명 찾기
-                        `'${latestReportSheetName}'!L:L`, // L열 전체에서 SITE명 찾기
-                    ];
+                    // L열만 가져오기 (고객 요청사항 입력 불가 사이트 판별용)
+                    const lColumnRange = `'${latestReportSheetName}'!L:L`;
 
                     try {
-                        const siteResponse = await gapi.client.sheets.spreadsheets.values.batchGet({
+                        const lColumnResponse = await gapi.client.sheets.spreadsheets.values.get({
                             spreadsheetId: SPREADSHEET_ID,
-                            ranges: siteNameRanges,
+                            range: lColumnRange,
                         });
-                        console.log('Site Names Batch Get Response:', siteResponse);
+                        console.log('L Column Response:', lColumnResponse);
 
-                        const fetchedSites = new Set();
-                        const lColumnSitesWithoutCustomerRequests = new Set(); // L열의 40행 이후 사이트들
+                        const lColumnSitesWithoutCustomerRequests = new Set();
                         
-                        siteResponse.result.valueRanges.forEach((rangeData, rangeIndex) => {
-                            if (rangeData.values) {
-                                rangeData.values.forEach((row, rowIndex) => {
-                                    if (row.length > 0 && row[0] && row[0].trim() !== '') {
-                                        const cellValue = row[0].trim();
-                                        // 헤더나 설명 텍스트가 아닌 실제 사이트명만 필터링
-                                        if (cellValue !== 'SITE명' && 
-                                            !cellValue.includes('금주 한 일') && 
-                                            !cellValue.includes('차주 할 일') && 
-                                            !cellValue.includes('고객 요청사항') &&
-                                            !cellValue.includes('본인 성명') &&
-                                            !cellValue.includes('필수 입력') &&
-                                            !cellValue.includes('없음') &&
-                                            !cellValue.includes('▶') &&
-                                            !cellValue.includes('구분') &&
-                                            !cellValue.includes('작성 등록일') &&
-                                            !cellValue.includes('매주 목요일') &&
-                                            !cellValue.includes('휴일은 전일') &&
-                                            !cellValue.includes('각 항목') &&
-                                            !cellValue.includes('작성 내용이 없으면') &&
-                                            !cellValue.includes('SITE명 순서') &&
-                                            !cellValue.includes('프로젝트 순 표시') &&
-                                            !cellValue.includes('25년 현재') &&
-                                            !cellValue.includes('추진 中 프로젝트') &&
-                                            rowIndex >= 3) { // 4행부터 시작 (0-based이므로 3)
-                                            
-                                            fetchedSites.add(cellValue);
-                                            
-                                            // L열(rangeIndex === 2)이고 40행 이후(rowIndex >= 39, 0-based이므로 40행은 39)인 경우
-                                            if (rangeIndex === 2 && rowIndex >= 39) {
-                                                lColumnSitesWithoutCustomerRequests.add(cellValue);
-                                                console.log(`L열 40행 이후 사이트 발견: ${cellValue} (행: ${rowIndex + 1})`);
-                                            }
-                                        }
+                        if (lColumnResponse.result.values) {
+                            lColumnResponse.result.values.forEach((row, rowIndex) => {
+                                if (row.length > 0 && row[0] && row[0].trim() !== '') {
+                                    const cellValue = row[0].trim();
+                                    // 40행 이후(rowIndex >= 39)이고, 헤더가 아닌 실제 사이트명인 경우
+                                    if (rowIndex >= 39 && 
+                                        cellValue !== 'SITE명' && 
+                                        !cellValue.includes('금주 한 일') && 
+                                        !cellValue.includes('차주 할 일') && 
+                                        !cellValue.includes('고객 요청사항')) {
+                                        lColumnSitesWithoutCustomerRequests.add(cellValue);
+                                        console.log(`L열 40행 이후 사이트 발견: ${cellValue} (행: ${rowIndex + 1})`);
                                     }
-                                });
-                            }
-                        });
+                                }
+                            });
+                        }
                         
                         // L열 40행 이후 사이트들을 예외 목록에 추가
                         sitesWithoutCustomerRequests = Array.from(lColumnSitesWithoutCustomerRequests);
                         console.log('동적으로 생성된 예외 사이트 목록:', sitesWithoutCustomerRequests);
-                        originalSites = Array.from(fetchedSites).sort();
-                        console.log('Original Sites from latest report sheet:', originalSites); // 새로 가져온 사이트 목록 출력
 
                     } catch (siteErr) {
-                        console.error('Error fetching site names from latest report sheet:', siteErr);
-                        // 오류 발생 시 사이트 목록을 비워둠
-                        originalSites = [];
+                        console.error('Error fetching L column sites from latest report sheet:', siteErr);
+                        sitesWithoutCustomerRequests = [];
                     }
                 } else {
-                    console.log('No YYYY-MM-DD report sheets found, cannot fetch site names.');
-                    originalSites = [];
+                    console.log('No YYYY-MM-DD report sheets found.');
+                    sitesWithoutCustomerRequests = [];
                 }
 
                 // 사이트 드롭다운 채우기
@@ -1269,21 +1263,52 @@
                 }
             }
 
-            filteredSites.sort();
-
+            // 일반사이트와 프로젝트사이트로 분류
+            const normalSites = [];
+            const projectSites = [];
+            
             filteredSites.forEach(site => {
-                const option = document.createElement('option');
-                option.value = site;
-                
-                // 고객 요청사항 입력 불가 사이트인 경우 "(프로젝트)" 접두사 추가
-                if (sitesWithoutCustomerRequests.includes(site)) {
-                    option.textContent = `(프로젝트) ${site}`;
+                if (siteListData.프로젝트사이트 && siteListData.프로젝트사이트.includes(site)) {
+                    projectSites.push(site);
+                } else if (siteListData.일반사이트 && siteListData.일반사이트.includes(site)) {
+                    normalSites.push(site);
                 } else {
-                    option.textContent = site;
+                    // site_list.json에 없는 사이트는 일반사이트로 분류
+                    normalSites.push(site);
                 }
-                
-                siteSelect.appendChild(option);
             });
+
+            // 각 그룹 정렬
+            normalSites.sort();
+            projectSites.sort();
+
+            // 프로젝트사이트 먼저 추가
+            if (projectSites.length > 0) {
+                const projectGroup = document.createElement('optgroup');
+                projectGroup.label = '📂 프로젝트사이트';
+                projectSites.forEach(site => {
+                    const option = document.createElement('option');
+                    option.value = site;
+                    option.textContent = site;
+                    projectGroup.appendChild(option);
+                });
+                siteSelect.appendChild(projectGroup);
+            }
+
+            // 일반사이트 추가
+            if (normalSites.length > 0) {
+                const normalGroup = document.createElement('optgroup');
+                normalGroup.label = '📁 일반사이트';
+                normalSites.forEach(site => {
+                    const option = document.createElement('option');
+                    option.value = site;
+                    option.textContent = site;
+                    normalGroup.appendChild(option);
+                });
+                siteSelect.appendChild(normalGroup);
+            }
+            
+            console.log('드롭다운 업데이트 완료 - 프로젝트사이트:', projectSites.length, '일반사이트:', normalSites.length);
         }
 
 
@@ -2676,7 +2701,22 @@
         }
 
         /**
+         * 사이트명을 정규화합니다 (띄어쓰기, 줄바꿈, 특수 공백 제거).
+         * @param {string} siteName 정규화할 사이트명
+         * @returns {string} 정규화된 사이트명
+         */
+        function normalizeSiteName(siteName) {
+            if (!siteName) return '';
+            return siteName
+                .replace(/\s+/g, '')      // 모든 공백(띄어쓰기, 줄바꿈, 탭 등) 제거
+                .replace(/\n/g, '')       // 줄바꿈 제거
+                .trim()                   // 앞뒤 공백 제거
+                .toLowerCase();           // 소문자로 통일
+        }
+
+        /**
          * 시트 데이터에서 특정 site_name을 찾아 해당 셀의 0-based 행과 열 인덱스를 반환합니다.
+         * 정확히 일치하지 않으면 정규화된 문자열로 비교합니다 (띄어쓰기, 줄바꿈 무시).
          * site_name은 'SITE명' 열(B열, G열, L열 등)에 위치한다고 가정합니다.
          * @param {Array<Array<string>>} sheetData 시트의 전체 2차원 배열 데이터
          * @param {string} siteName 찾을 site_name
@@ -2686,22 +2726,33 @@
          */
         function findCellCoordinates(sheetData, siteName, sheetName, columnOrder) {
             const siteNameColIndexInOrder = columnOrder.indexOf('SITE명');
+            const normalizedSearchName = normalizeSiteName(siteName);
+            
+            console.log(`🔍 사이트 검색 중: "${siteName}" (정규화: "${normalizedSearchName}")`);
             
             for (let r = 0; r < sheetData.length; r++) {
                 const row = sheetData[r];
                 for (let c = 0; c < row.length; c++) {
-                    // SITE명 열에 해당하는 경우에만 검색
-                    // 여기서는 columnOrder의 'SITE명'이 실제 Sheets의 어느 열에 해당하는지를 알아야 합니다.
-                    // 간단화를 위해, 실제 Sheets에서 SITE명이 특정 열에 규칙적으로 나타난다고 가정합니다.
-                    // 예를 들어, B, G, L 열에 SITE명이 있다면, c % 5 === 1 (0-based) 과 같은 규칙을 사용할 수 있습니다.
-                    // 현재는 모든 셀을 검색합니다. 보다 정확한 로직이 필요하면 수정해야 합니다.
-                    if (row[c] === siteName) {
-                         // 여기서 `c`는 site_name이 발견된 실제 0-based 열 인덱스입니다。
-                         // 이 `c`를 기준으로 다른 컬럼의 오프셋을 계산합니다.
+                    if (!row[c]) continue; // 빈 셀은 건너뜀
+                    
+                    const cellValue = row[c].toString();
+                    const normalizedCellValue = normalizeSiteName(cellValue);
+                    
+                    // 1차: 정확히 일치하는 경우
+                    if (cellValue === siteName) {
+                        console.log(`✓ 정확히 일치하는 사이트 발견: "${cellValue}" at row ${r+1}, col ${columnToLetter(c)}`);
+                        return { row: r, col: c };
+                    }
+                    
+                    // 2차: 정규화된 문자열로 비교 (띄어쓰기, 줄바꿈 무시)
+                    if (normalizedCellValue === normalizedSearchName && normalizedSearchName !== '') {
+                        console.log(`✓ 정규화 매칭 성공: Sheets="${cellValue}" ↔ 검색="${siteName}" at row ${r+1}, col ${columnToLetter(c)}`);
                         return { row: r, col: c };
                     }
                 }
             }
+            
+            console.warn(`⚠️ 사이트를 찾을 수 없습니다: "${siteName}" (정규화: "${normalizedSearchName}")`);
             return { row: -1, col: -1 };
         }
 
@@ -2723,6 +2774,7 @@
         // 페이지 로드 시 매핑 데이터 로드
         window.addEventListener('DOMContentLoaded', function() {
             loadManagerSiteMapping();
+            loadSiteList();
         });
     </script>
 
